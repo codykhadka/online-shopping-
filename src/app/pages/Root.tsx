@@ -3,7 +3,7 @@ import { Outlet } from "react-router";
 import { Header } from "../components/Header";
 import { Cart, CartItem } from "../components/Cart";
 import { Product } from "../data/products";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 
 export function Root() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -45,13 +45,15 @@ export function Root() {
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <>
+    <div className="min-h-screen bg-white">
       <Header
         cartItemCount={cartItemCount}
         onCartClick={() => setIsCartOpen(true)}
       />
       
-      <Outlet context={{ onAddToCart: handleAddToCart }} />
+      <main>
+        <Outlet context={{ onAddToCart: handleAddToCart }} />
+      </main>
       
       <Cart
         items={cartItems}
@@ -60,8 +62,6 @@ export function Root() {
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
       />
-      
-      <Toaster position="top-center" />
-    </>
+    </div>
   );
 }

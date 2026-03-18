@@ -1,300 +1,273 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { MapPin, Package, Truck, CheckCircle, Clock, Phone, User } from "lucide-react";
+import { 
+  Package, Truck, CheckCircle, Clock, MapPin, 
+  Phone, User, ChevronRight, Star, AlertCircle,
+  MessageSquare, FastForward, ExternalLink
+} from "lucide-react";
 import { Button } from "../components/ui/button";
+import { LiveMap } from "../components/LiveMap";
 
-interface TrackingStep {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  completed: boolean;
-  icon: typeof Package;
-}
-
-interface Location {
-  lat: number;
-  lng: number;
-  label: string;
-}
+const STEPS = [
+  { id: 1, label: "Order Confirmed", icon: CheckCircle, description: "Your order has been confirmed and is being processed." },
+  { id: 2, label: "Package Prepared", icon: Package, description: "Your items have been packed and are ready for pickup." },
+  { id: 3, label: "Out for Delivery", icon: Truck, description: "Our courier is on the way to your location." },
+  { id: 4, label: "Delivered", icon: CheckCircle, description: "Order successfully delivered. Enjoy your purchase!" }
+];
 
 export function DeliveryTracking() {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [driverLocation, setDriverLocation] = useState<Location>({
-    lat: 40.7580,
-    lng: -73.9855,
-    label: "Driver Location"
-  });
+  const [currentStep, setCurrentStep] = useState(0); // 0 means Pending
 
-  const steps: TrackingStep[] = [
-    {
-      id: "1",
-      title: "Order Confirmed",
-      description: "Your order has been confirmed",
-      time: "2:30 PM",
-      completed: currentStep >= 0,
-      icon: CheckCircle,
-    },
-    {
-      id: "2",
-      title: "Package Prepared",
-      description: "Your package is being prepared",
-      time: "2:45 PM",
-      completed: currentStep >= 1,
-      icon: Package,
-    },
-    {
-      id: "3",
-      title: "Out for Delivery",
-      description: "Driver is on the way",
-      time: currentStep >= 2 ? "3:10 PM" : "Pending",
-      completed: currentStep >= 2,
-      icon: Truck,
-    },
-    {
-      id: "4",
-      title: "Delivered",
-      description: "Package delivered successfully",
-      time: currentStep >= 3 ? "4:00 PM" : "Estimated",
-      completed: currentStep >= 3,
-      icon: CheckCircle,
-    },
-  ];
-
-  // Simulate live location updates
+  // Sync with localStorage (Admin status updates)
   useEffect(() => {
-    if (currentStep >= 2 && currentStep < 3) {
-      const interval = setInterval(() => {
-        setDriverLocation(prev => ({
-          ...prev,
-          lat: prev.lat + (Math.random() - 0.5) * 0.01,
-          lng: prev.lng + (Math.random() - 0.5) * 0.01,
-        }));
-      }, 3000);
-
-      return () => clearInterval(interval);
+    const savedStatus = localStorage.getItem(`order_status_${orderId}`);
+    if (savedStatus !== null) {
+      setCurrentStep(parseInt(savedStatus, 10) + 1);
     }
-  }, [currentStep]);
 
-  // Simulate delivery progress
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (currentStep < 3) {
-        setCurrentStep(prev => prev + 1);
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `order_status_${orderId}` && e.newValue !== null) {
+        setCurrentStep(parseInt(e.newValue, 10) + 1);
       }
-    }, 8000);
+    };
 
-    return () => clearTimeout(timer);
-  }, [currentStep]);
+    window.addEventListener('storage', handleStorageChange);
+    
+    const interval = setInterval(() => {
+      const saved = localStorage.getItem(`order_status_${orderId}`);
+      if (saved) {
+        const step = parseInt(saved, 10) + 1;
+        if (step !== currentStep) {
+          setCurrentStep(step);
+        }
+      }
+    }, 1000);
 
-  const deliveryAddress = "123 Main St, New York, NY 10001";
-  const estimatedTime = currentStep >= 2 ? "25 minutes" : "45 minutes";
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [orderId, currentStep]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/")}
-              className="px-3"
-            >
-              ← Back
-            </Button>
+    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+      {/* Pending Banner */}
+      {currentStep === 0 && (
+        <div className="bg-amber-50 border border-amber-200 p-6 rounded-3xl flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="size-12 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200">
+              <Clock className="text-white animate-pulse" size={24} />
+            </div>
             <div>
-              <h1 className="font-semibold">Track Order</h1>
-              <p className="text-sm text-gray-600">Order #{orderId}</p>
+              <h3 className="font-bold text-slate-900 tracking-tight">Awaiting Confirmation</h3>
+              <p className="text-sm text-slate-500 font-medium">The store is reviewing your order details.</p>
             </div>
           </div>
+          <div className="hidden md:block">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-3 py-1 rounded-full">Intake Priority: HIGH</span>
+          </div>
         </div>
+      )}
+
+      {/* Hero Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatusCard 
+          label="Estimated Arrival" 
+          value="Today, 4:30 PM" 
+          icon={Clock} 
+          color="text-blue-600 bg-blue-50"
+        />
+        <StatusCard 
+          label="Shipping From" 
+          value="Kathmandu Hub" 
+          icon={MapPin} 
+          color="text-purple-600 bg-purple-50"
+        />
+        <StatusCard 
+          label="Courier" 
+          value="Ram Bahadur" 
+          icon={User} 
+          color="text-orange-600 bg-orange-50"
+        />
       </div>
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Live Map Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <MapPin className="size-5 text-blue-600" />
-              Live Tracking
-            </h2>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm">
-              <div className="size-2 bg-green-600 rounded-full animate-pulse"></div>
-              Live
-            </div>
-          </div>
-
-          {/* Map Placeholder */}
-          <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ height: "300px" }}>
-            {/* Simple map visualization */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100">
-              {/* Grid lines to simulate map */}
-              <div className="absolute inset-0 opacity-20">
-                {[...Array(10)].map((_, i) => (
-                  <div key={i} className="absolute w-full h-px bg-gray-400" style={{ top: `${i * 10}%` }} />
-                ))}
-                {[...Array(10)].map((_, i) => (
-                  <div key={i} className="absolute h-full w-px bg-gray-400" style={{ left: `${i * 10}%` }} />
-                ))}
-              </div>
-
-              {/* Destination marker */}
-              <div className="absolute top-1/4 right-1/3 animate-bounce">
-                <div className="bg-red-500 rounded-full p-2 shadow-lg">
-                  <MapPin className="size-6 text-white" fill="currentColor" />
-                </div>
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white px-2 py-1 rounded shadow text-xs">
-                  Your Home
-                </div>
-              </div>
-
-              {/* Driver marker - animated */}
-              {currentStep >= 2 && (
-                <div 
-                  className="absolute transition-all duration-3000 ease-linear"
-                  style={{
-                    top: `${45 + (driverLocation.lat - 40.7580) * 500}%`,
-                    left: `${35 + (driverLocation.lng + 73.9855) * 500}%`,
-                  }}
-                >
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-                    <div className="relative bg-blue-600 rounded-full p-2 shadow-lg">
-                      <Truck className="size-6 text-white" />
-                    </div>
-                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white px-2 py-1 rounded shadow text-xs">
-                      Driver
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Route line */}
-              {currentStep >= 2 && (
-                <svg className="absolute inset-0 w-full h-full">
-                  <line
-                    x1="35%"
-                    y1="45%"
-                    x2="65%"
-                    y2="25%"
-                    stroke="#3B82F6"
-                    strokeWidth="3"
-                    strokeDasharray="10,5"
-                    className="animate-pulse"
-                  />
-                </svg>
-              )}
-            </div>
-
-            {/* Estimated time overlay */}
-            <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg px-4 py-2">
-              <div className="flex items-center gap-2">
-                <Clock className="size-4 text-gray-600" />
-                <div>
-                  <p className="text-xs text-gray-600">Estimated arrival</p>
-                  <p className="font-semibold">{estimatedTime}</p>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Progress Column */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Delivery Timeline</h2>
+                <p className="text-sm text-slate-500 font-medium">Real-time tracking enabled</p>
               </div>
             </div>
-          </div>
 
-          {/* Delivery address */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-600 mb-1">Delivery Address</p>
-            <p className="text-sm font-medium">{deliveryAddress}</p>
-          </div>
-        </div>
+            <div className="p-8 space-y-8 relative">
+              {/* Connector Line */}
+              <div className="absolute left-[3.25rem] top-10 bottom-10 w-0.5 bg-slate-100"></div>
+              
+              {STEPS.map((step) => {
+                const isCompleted = currentStep > step.id;
+                const isActive = currentStep === step.id;
+                const Icon = step.icon;
 
-        {/* Driver Info */}
-        {currentStep >= 2 && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4">Driver Information</h2>
-            <div className="flex items-center gap-4">
-              <div className="size-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xl font-semibold">
-                JD
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold">John Doe</p>
-                <p className="text-sm text-gray-600">Delivery Partner</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-yellow-500">★</span>
-                  <span className="text-sm">4.8 (2,450 deliveries)</span>
-                </div>
-              </div>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Phone className="size-4" />
-                Call
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Delivery Timeline */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-6">Delivery Status</h2>
-          <div className="space-y-6">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = index === currentStep;
-              const isCompleted = step.completed;
-
-              return (
-                <div key={step.id} className="flex gap-4">
-                  {/* Timeline line */}
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`size-10 rounded-full flex items-center justify-center transition-all ${
-                        isCompleted
-                          ? "bg-green-500 text-white"
-                          : isActive
-                          ? "bg-blue-500 text-white animate-pulse"
-                          : "bg-gray-200 text-gray-400"
-                      }`}
-                    >
-                      <Icon className="size-5" />
+                return (
+                  <div key={step.id} className="relative flex gap-6 group">
+                    {/* Step Indicator */}
+                    <div className={`
+                      relative z-10 size-10 rounded-2xl flex items-center justify-center transition-all duration-500 border-2
+                      ${isCompleted ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-200 scale-110" : 
+                        isActive ? "bg-white border-blue-600 text-blue-600 shadow-xl shadow-blue-100 scale-125 ring-4 ring-blue-50" : 
+                        "bg-white border-slate-200 text-slate-300"}
+                    `}>
+                      <Icon size={isCompleted ? 18 : 22} className={isCompleted ? "text-white" : ""} />
                     </div>
-                    {index < steps.length - 1 && (
-                      <div
-                        className={`w-0.5 h-12 transition-all ${
-                          isCompleted ? "bg-green-500" : "bg-gray-200"
-                        }`}
-                      />
-                    )}
-                  </div>
 
-                  {/* Content */}
-                  <div className="flex-1 pb-8">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className={`font-semibold ${isActive ? "text-blue-600" : ""}`}>
-                        {step.title}
-                      </h3>
-                      <span className="text-sm text-gray-600">{step.time}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{step.description}</p>
-                    {isActive && currentStep === 2 && (
-                      <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
-                        <div className="size-2 bg-blue-600 rounded-full animate-pulse"></div>
-                        Tracking in real-time
+                    <div className="flex-1 pb-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className={`font-bold transition-colors ${isActive ? "text-blue-600 text-lg" : isCompleted ? "text-slate-900" : "text-slate-400"}`}>
+                          {step.label}
+                        </h3>
+                        {isCompleted && (
+                          <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-tighter">Completed</span>
+                        )}
                       </div>
-                    )}
+                      <p className={`text-sm leading-relaxed ${isActive ? "text-slate-600" : "text-slate-400"}`}>
+                        {step.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
+
+          {/* Live Map Simulation Area */}
+          {currentStep === 3 && (
+            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl relative h-80 border-4 border-white">
+               <LiveMap destination="Baluwatar-04, Kathmandu" />
+            </div>
+          )}
         </div>
 
-        {/* Help Section */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-900 mb-2 font-medium">Need Help?</p>
-          <p className="text-sm text-blue-700">
-            Contact our support team at support@store.com or call 1-800-SUPPORT
-          </p>
+        {/* Info Column */}
+        <div className="space-y-6">
+          {/* Destination Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <MapPin size={18} className="text-red-500" />
+              Delivery Address
+            </h3>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4">
+              <p className="text-sm font-bold text-slate-800">Baluwatar-04, Kathmandu</p>
+              <p className="text-xs text-slate-500 mt-1">Near Speaker's House, Nepal</p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full text-xs font-bold gap-2 py-5 rounded-xl border-slate-200 hover:bg-slate-50"
+              onClick={() => window.open('https://www.google.com/maps/search/?api=1&query=Baluwatar-04,+Kathmandu', '_blank')}
+            >
+              <ExternalLink size={14} className="text-slate-400" />
+              View on Google Maps
+            </Button>
+          </div>
+
+          {/* Owner/Support Card */}
+          <div className={`p-6 rounded-3xl border transition-all duration-500 ${
+            currentStep === 1 
+              ? "bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-200" 
+              : "bg-white border-slate-200 text-slate-800"
+          }`}>
+            <h3 className={`font-bold mb-4 flex items-center gap-2 ${currentStep === 1 ? "text-white" : "text-slate-900"}`}>
+              <Phone size={18} />
+              Store Contact
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`size-10 rounded-xl flex items-center justify-center font-bold ${currentStep === 1 ? "bg-white/20" : "bg-slate-100"}`}>
+                  AK
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Animesh Karki</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider ${currentStep === 1 ? "text-blue-100" : "text-slate-400"}`}>Store Owner</p>
+                </div>
+              </div>
+
+              <div className={`p-3 rounded-2xl transition-colors ${currentStep === 1 ? "bg-white/10 border border-white/20" : "bg-slate-50 border border-slate-100"}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${currentStep === 1 ? "text-blue-100" : "text-slate-400"}`}>Direct Line</p>
+                <p className="font-mono font-bold">+977 9841234567</p>
+              </div>
+
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => alert('Calling owner...')}
+                  className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${
+                  currentStep === 1 ? "bg-white text-blue-600 hover:scale-[1.02]" : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}>
+                  Call Now
+                </button>
+                <button className={`p-3 rounded-xl transition-all ${
+                  currentStep === 1 ? "bg-white/20 hover:bg-white/30" : "bg-slate-100 hover:bg-slate-200"
+                }`}>
+                  <MessageSquare size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Need Help Card */}
+          <div className="bg-slate-900 rounded-3xl p-6 text-white overflow-hidden relative group">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 size-24 bg-blue-600/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+            <h3 className="font-bold mb-2 flex items-center gap-2">
+              <AlertCircle size={18} className="text-blue-400" />
+              Need Help?
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed mb-4">
+              If there's any issue with your delivery, our support team is available 24/7.
+            </p>
+            <button className="w-full py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-xs font-bold transition-all">
+              Chat with Agent
+            </button>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-slate-200 p-6">
+            <h3 className="font-bold text-slate-900 mb-4">Quality Assurance</h3>
+            <div className="space-y-3">
+              <QualityItem label="Fragile Handling" checked />
+              <QualityItem label="Cold Chain" checked />
+              <QualityItem label="Sterilized Packing" checked />
+            </div>
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatusCard({ label, value, icon: Icon, color }: any) {
+  return (
+    <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
+      <div className={`size-12 rounded-2xl flex items-center justify-center ${color}`}>
+        <Icon size={24} />
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">{label}</p>
+        <p className="text-sm font-bold text-slate-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function QualityItem({ label, checked }: any) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`size-4 rounded-full flex items-center justify-center ${checked ? "bg-green-100 text-green-600" : "bg-slate-100"}`}>
+        <Star size={10} fill={checked ? "currentColor" : "none"} />
+      </div>
+      <span className="text-xs font-medium text-slate-600">{label}</span>
     </div>
   );
 }

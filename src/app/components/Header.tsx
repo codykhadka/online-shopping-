@@ -1,7 +1,10 @@
-import { ShoppingCart, Search } from "lucide-react";
-import { Link } from "react-router";
+import { ShoppingCart, Search, Shield, User, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 import { Badge } from "./ui/badge";
 import { motion } from "motion/react";
+import { logoutUser } from "../utils/auth";
+import { useState, useEffect } from "react";
+import { useAuth } from "../AuthProvider";
 
 interface HeaderProps {
   cartItemCount: number;
@@ -9,6 +12,9 @@ interface HeaderProps {
 }
 
 export function Header({ cartItemCount, onCartClick }: HeaderProps) {
+  const { user, logout } = useAuth();
+  const isUserAuthenticated = user !== null;
+
   return (
     <motion.header 
       initial={{ y: -100, opacity: 0 }}
@@ -30,6 +36,38 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
         </Link>
 
         <div className="flex items-center gap-4">
+          {isUserAuthenticated ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-xl border border-green-100">
+              <User size={14} className="text-green-600" />
+              <span className="text-xs font-bold text-green-700">{user?.name}</span>
+              <button 
+                onClick={() => {
+                  logout();
+                  window.location.reload();
+                }}
+                className="ml-2 p-1 hover:bg-green-100 rounded-md text-green-600 transition-colors"
+                title="Logout"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          ) : (
+            <Link 
+              to="/login"
+              className="text-xs font-bold text-slate-500 hover:text-green-600 transition-colors"
+            >
+              Sign In
+            </Link>
+          )}
+
+          <Link 
+            to="/admin/tracking" 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-slate-500 hover:text-slate-900"
+            title="Admin Panel"
+          >
+            <Shield className="size-5" />
+          </Link>
+
           <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <Search className="size-5" />
           </button>

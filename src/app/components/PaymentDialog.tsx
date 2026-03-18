@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Product } from "../data/products";
 import { CreditCard, Lock, Truck, Zap, Clock } from "lucide-react";
+import { saveOrder } from "../utils/storage";
+import { getAuthUser } from "../utils/auth";
 import {
   Dialog,
   DialogContent,
@@ -56,11 +58,12 @@ const deliveryOptions = [
 
 export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: PaymentDialogProps) {
   const navigate = useNavigate();
+  const authUser = getAuthUser();
   const [isProcessing, setIsProcessing] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("standard");
   const [formData, setFormData] = useState({
     cardNumber: "",
-    cardName: "",
+    cardName: authUser?.name || "",
     expiryDate: "",
     cvv: "",
     email: "",
@@ -83,6 +86,19 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
     setTimeout(() => {
       setIsProcessing(false);
       const orderId = Math.random().toString(36).substring(7).toUpperCase();
+      
+      // Save real order to persistent storage
+      saveOrder({
+        id: orderId,
+        customerName: formData.cardName || "Guest Customer",
+        productName: product.name,
+        price: total,
+        status: -1, // -1 means PENDING
+        timestamp: new Date().toLocaleString(),
+        address: `${formData.address}, ${formData.city}, ${formData.zipCode}`,
+        phone: formData.phone
+      });
+
       const deliveryMsg = deliveryMethod === "cashOnDelivery" 
         ? "Order confirmed! Pay when you receive your delivery."
         : "Payment successful! Order confirmed.";
