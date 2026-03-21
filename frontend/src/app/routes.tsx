@@ -1,4 +1,4 @@
-import { createBrowserRouter, Outlet } from "react-router";
+import { createBrowserRouter, Outlet, useLocation, useNavigate } from "react-router";
 import { Root } from "./pages/Root";
 import { Home } from "./pages/Home";
 import { ProductDetail } from "./pages/ProductDetail";
@@ -6,6 +6,7 @@ import { TrackingLayout } from "./pages/TrackingLayout";
 import { DeliveryTracking } from "./pages/DeliveryTracking";
 import { AdminLayout } from "./pages/AdminLayout";
 import { AdminTracker } from "./pages/AdminTracker";
+import { LoginPage } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
 import { useOutletContext } from "react-router";
 import { Product } from "./data/products";
@@ -35,13 +36,15 @@ function GlobalLayout() {
 
 // Simple Protected Route Wrapper that triggers modal
 function Protected({ children }: { children: React.ReactNode }) {
-  const { user, openLoginModal } = useAuth();
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   useEffect(() => {
     if (!user) {
-      openLoginModal();
+      navigate("/login", { state: { from: location }, replace: true });
     }
-  }, [user, openLoginModal]);
+  }, [user, navigate, location]);
 
   return <>{children}</>;
 }
@@ -51,6 +54,10 @@ export const router = createBrowserRouter([
     path: "/",
     Component: GlobalLayout,
     children: [
+      {
+        path: "/login",
+        Component: LoginPage,
+      },
       {
         path: "/",
         Component: Root,

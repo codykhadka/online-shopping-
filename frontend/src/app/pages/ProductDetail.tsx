@@ -1,10 +1,12 @@
-import { useParams, Link, Navigate } from "react-router";
+import { useParams, Link, Navigate, useNavigate } from "react-router";
 import { products, Product } from "../data/products";
 import { Star, ShoppingCart, Check, ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { PaymentDialog } from "../components/PaymentDialog";
 import { useState } from "react";
+import { useAuth } from "../AuthProvider";
+import { motion } from "motion/react";
 
 interface ProductDetailProps {
   onAddToCart: (product: Product) => void;
@@ -14,14 +16,36 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
   const { id } = useParams<{ id: string }>();
   const product = products.find(p => p.id === id);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const { user, openLoginModal } = useAuth();
+  const navigate = useNavigate();
+
+  const handleBuyNow = () => {
+    if (!user) {
+      openLoginModal();
+    } else {
+      setIsPaymentOpen(true);
+    }
+  };
 
   if (!product) {
     return <Navigate to="/404" replace />;
   }
 
+  // Recommended: same category, not current product (up to 4)
+  const recommended = products
+    .filter(p => p.category === product.category && p.id !== product.id)
+    .slice(0, 4);
+
+  const allOthers = recommended.length < 4
+    ? [
+        ...recommended,
+        ...products.filter(p => p.id !== product.id && !recommended.find(r => r.id === p.id))
+      ].slice(0, 4)
+    : recommended;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-24">
         {/* Back Button */}
         <Link
           to="/"
@@ -33,16 +57,26 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Image */}
-          <div className="bg-white rounded-lg overflow-hidden">
+          <motion.div 
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="bg-white rounded-2xl overflow-hidden shadow-md"
+          >
             <img
               src={product.image}
               alt={product.name}
               className="w-full aspect-square object-cover"
             />
-          </div>
+          </motion.div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <motion.div 
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="space-y-6"
+          >
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Badge>{product.category}</Badge>
@@ -103,14 +137,62 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => setIsPaymentOpen(true)}
+                onClick={handleBuyNow}
                 disabled={!product.inStock}
               >
                 Buy Now
               </Button>
             </div>
-          </div>
+          </motion.div>
         </div>
+
+        {/* Recommended Products */}
+        {allOthers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="mt-20"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-1 h-7 bg-green-500 rounded-full"></div>
+              <h2 className="text-2xl font-black text-neutral-800 tracking-tight">You May Also Like</h2>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+              {allOthers.map((rec, i) => (
+                <motion.div
+                  key={rec.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + i * 0.1, duration: 0.5 }}
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                  onClick={() => navigate(`/product/${rec.id}`)}
+                  className="bg-white rounded-2xl overflow-hidden border border-neutral-100 shadow-sm hover:shadow-xl hover:border-green-200 transition-all cursor-pointer group"
+                >
+                  <div className="aspect-square overflow-hidden">
+                    <img
+                      src={rec.image}
+                      alt={rec.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="text-xs text-green-600 font-bold uppercase tracking-wide mb-1">{rec.category}</p>
+                    <h3 className="font-bold text-sm text-neutral-900 mb-2 leading-snug line-clamp-2">{rec.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-black text-neutral-900">${rec.price}</span>
+                      <div className="flex items-center gap-1">
+                        <Star className="size-3 fill-yellow-400 text-yellow-400" />
+                        <span className="text-xs text-neutral-500 font-medium">{rec.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       <PaymentDialog

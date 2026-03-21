@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { 
@@ -20,36 +21,28 @@ export function DeliveryTracking() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0); // 0 means Pending
 
-  // Sync with localStorage (Admin status updates)
+  // Sync with Backend API
   useEffect(() => {
-    const savedStatus = localStorage.getItem(`order_status_${orderId}`);
-    if (savedStatus !== null) {
-      setCurrentStep(parseInt(savedStatus, 10) + 1);
-    }
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `order_status_${orderId}` && e.newValue !== null) {
-        setCurrentStep(parseInt(e.newValue, 10) + 1);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    const interval = setInterval(() => {
-      const saved = localStorage.getItem(`order_status_${orderId}`);
-      if (saved) {
-        const step = parseInt(saved, 10) + 1;
-        if (step !== currentStep) {
-          setCurrentStep(step);
+    const fetchOrderStatus = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
+        const response = await fetch(`${apiUrl}/orders`);
+        const allOrders = await response.json();
+        const currentOrder = allOrders.find((o: any) => o.id === orderId);
+        if (currentOrder) {
+          setCurrentStep(currentOrder.status + 1);
         }
+      } catch (err) {
+        console.error("Failed to fetch order status from API", err);
       }
-    }, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
     };
-  }, [orderId, currentStep]);
+
+    fetchOrderStatus();
+    
+    const interval = setInterval(fetchOrderStatus, 3000); // Poll for status updates
+
+    return () => clearInterval(interval);
+  }, [orderId]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">

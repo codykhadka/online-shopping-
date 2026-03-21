@@ -78,50 +78,50 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
   const deliveryFee = selectedDelivery.price;
   const total = subtotal + deliveryFee;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
     // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      const orderId = Math.random().toString(36).substring(7).toUpperCase();
-      
-      // Save real order to persistent storage
-      saveOrder({
-        id: orderId,
-        customerName: formData.cardName || "Guest Customer",
-        productName: product.name,
-        price: total,
-        status: -1, // -1 means PENDING
-        timestamp: new Date().toLocaleString(),
-        address: `${formData.address}, ${formData.city}, ${formData.zipCode}`,
-        phone: formData.phone
-      });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setIsProcessing(false);
+    const orderId = Math.random().toString(36).substring(7).toUpperCase();
+    
+    // Save real order to persistent storage (Backend API)
+    await saveOrder({
+      id: orderId,
+      customerName: formData.cardName || "Guest Customer",
+      productName: product.name,
+      price: total,
+      status: -1, // -1 means PENDING
+      timestamp: new Date().toLocaleString(),
+      address: `${formData.address}, ${formData.city}, ${formData.zipCode}`,
+      phone: formData.phone
+    });
 
-      const deliveryMsg = deliveryMethod === "cashOnDelivery" 
-        ? "Order confirmed! Pay when you receive your delivery."
-        : "Payment successful! Order confirmed.";
-      toast.success(deliveryMsg);
-      onClose();
-      
-      // Reset form
-      setFormData({
-        cardNumber: "",
-        cardName: "",
-        expiryDate: "",
-        cvv: "",
-        email: "",
-        address: "",
-        city: "",
-        zipCode: "",
-        phone: "",
-      });
-      setDeliveryMethod("standard");
-      
-      // Navigate to tracking page
-      navigate(`/tracking/${orderId}`);
-    }, 2000);
+    const deliveryMsg = deliveryMethod === "cashOnDelivery" 
+      ? "Order confirmed! Pay when you receive your delivery."
+      : "Payment successful! Order confirmed.";
+    toast.success(deliveryMsg);
+    onClose();
+    
+    // Reset form
+    setFormData({
+      cardNumber: "",
+      cardName: "",
+      expiryDate: "",
+      cvv: "",
+      email: "",
+      address: "",
+      city: "",
+      zipCode: "",
+      phone: "",
+    });
+    setDeliveryMethod("standard");
+    
+    // Navigate to tracking page
+    navigate(`/tracking/${orderId}`);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

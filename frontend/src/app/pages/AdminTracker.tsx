@@ -47,8 +47,8 @@ export function AdminTracker() {
     console.log("New order pulse received!");
   };
 
-  const loadOrders = () => {
-    const freshOrders = getOrders();
+  const loadOrders = async () => {
+    const freshOrders = await getOrders();
     const pendingOrders = freshOrders.filter(o => o.status === -1);
     
     // Check if any new pending orders arrived
@@ -78,9 +78,9 @@ export function AdminTracker() {
     });
   }, [orders, searchQuery, statusFilter]);
 
-  const handleUpdateStatus = (orderIds: string[], newStatus: number) => {
+  const handleUpdateStatus = async (orderIds: string[], newStatus: number) => {
     const timestamp = new Date().toLocaleTimeString();
-    orderIds.forEach(id => updateOrderStatus(id, newStatus));
+    await Promise.all(orderIds.map(id => updateOrderStatus(id, newStatus)));
     
     const newItems = orderIds.map(id => ({
       id: Math.random().toString(36).substr(2, 9),
@@ -156,7 +156,7 @@ export function AdminTracker() {
               <Button size="sm" onClick={() => handleUpdateStatus(selectedOrderIds, 0)} className="bg-blue-600 text-white text-[10px] font-black uppercase">Accept Selected</Button>
             </div>
           )}
-          <Button variant="ghost" size="sm" onClick={clearOrders} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">
+          <Button variant="ghost" size="sm" onClick={async () => { await clearOrders(); loadOrders(); }} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">
             <RotateCcw size={14} className="mr-2" /> Reset All
           </Button>
         </div>

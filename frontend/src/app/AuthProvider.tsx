@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, getAuthUser, loginUser as authLogin, logoutUser as authLogout } from "./utils/auth";
+import { User, getAuthUser, loginUser, logoutUser, registerUser } from "./utils/auth";
 
 interface AuthContextType {
   user: User | null;
   isLoginModalOpen: boolean;
   openLoginModal: () => void;
   closeLoginModal: () => void;
-  login: (name: string) => void;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -24,13 +25,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('auth-change', handleAuthChange);
   }, []);
 
-  const login = (name: string) => {
-    authLogin(name);
-    setIsLoginModalOpen(false);
+  const login = async (username: string, password: string) => {
+    const result = await loginUser(username, password);
+    if (result.success) {
+      setUser(getAuthUser());
+      setIsLoginModalOpen(false);
+    }
+    return result;
+  };
+
+  const register = async (name: string, username: string, password: string) => {
+    const result = await registerUser(name, username, password);
+    if (result.success) {
+      setUser(getAuthUser());
+      setIsLoginModalOpen(false);
+    }
+    return result;
   };
 
   const logout = () => {
-    authLogout();
+    logoutUser();
+    setUser(null);
   };
 
   return (
@@ -40,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       openLoginModal: () => setIsLoginModalOpen(true),
       closeLoginModal: () => setIsLoginModalOpen(false),
       login,
+      register,
       logout
     }}>
       {children}
