@@ -84,10 +84,10 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
 
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     setIsProcessing(false);
     const orderId = Math.random().toString(36).substring(7).toUpperCase();
-    
+
     // Save real order to persistent storage (Backend API)
     await saveOrder({
       id: orderId,
@@ -100,12 +100,12 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
       phone: formData.phone
     });
 
-    const deliveryMsg = deliveryMethod === "cashOnDelivery" 
+    const deliveryMsg = deliveryMethod === "cashOnDelivery"
       ? "Order confirmed! Pay when you receive your delivery."
       : "Payment successful! Order confirmed.";
     toast.success(deliveryMsg);
     onClose();
-    
+
     // Reset form
     setFormData({
       cardNumber: "",
@@ -119,7 +119,7 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
       phone: "",
     });
     setDeliveryMethod("standard");
-    
+
     // Navigate to tracking page
     navigate(`/tracking/${orderId}`);
   };
@@ -187,11 +187,10 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
                     key={option.id}
                     type="button"
                     onClick={() => setDeliveryMethod(option.id)}
-                    className={`p-4 border rounded-lg text-left transition-all ${
-                      deliveryMethod === option.id
+                    className={`p-4 border rounded-lg text-left transition-all ${deliveryMethod === option.id
                         ? "border-blue-600 bg-blue-50 ring-2 ring-blue-600"
                         : "border-gray-300 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       <Icon className={`size-5 mt-0.5 ${deliveryMethod === option.id ? "text-blue-600" : "text-gray-600"}`} />
@@ -380,7 +379,7 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
           </div>
 
           <p className="text-xs text-center text-gray-500">
-            🔒 {deliveryMethod === "cashOnDelivery" 
+            🔒 {deliveryMethod === "cashOnDelivery"
               ? "Your order is secure and will be confirmed immediately"
               : "Your payment information is encrypted and secure"}
           </p>

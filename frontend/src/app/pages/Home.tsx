@@ -10,18 +10,36 @@ interface HomeProps {
   onAddToCart: (product: Product) => void;
 }
 
-// Smooth spring variant for all scroll-reveal elements
+// Typing animation variants
+const typingContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.12, delayChildren: 0.8 }
+  }
+};
+
+const typingLetter = {
+  hidden: { opacity: 0, y: 15, filter: "blur(4px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    color: ["#ffffff", "#a7f3d0", "#4ade80"],
+    transition: { duration: 0.6, ease: "easeOut" as const }
+  }
+};
+
+// Luxurious easing curve for smooth reveal
 const smoothReveal = {
-  hidden: { opacity: 0, y: 50, scale: 0.97 },
+  hidden: { opacity: 0, y: 60, scale: 0.96 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
     transition: {
-      type: "spring" as const,
-      stiffness: 70,
-      damping: 18,
-      mass: 0.8,
+      duration: 0.8,
+      ease: [0.16, 1, 0.3, 1] as const
     }
   }
 };
@@ -35,12 +53,12 @@ const staggerContainer = {
 };
 
 const cardVariant = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  hidden: { opacity: 0, y: 40, scale: 0.96 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring" as const, stiffness: 80, damping: 16 }
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] as const }
   }
 };
 
@@ -101,20 +119,31 @@ export function Home({ onAddToCart }: HomeProps) {
           className="absolute inset-0 z-0 origin-top h-[125%]"
         >
           <motion.div
-            initial={{ scale: 1.2, filter: "blur(8px)" }}
+            initial={{ scale: 1.1, filter: "blur(12px)" }}
             animate={{
-              scale: [1, 1.07, 1],
-              x: [0, -18, 0],
+              scale: [1, 1.05, 1],
               filter: "blur(0px)"
             }}
             transition={{
-              scale: { duration: 28, repeat: Infinity, ease: "easeInOut" },
-              x: { duration: 28, repeat: Infinity, ease: "easeInOut" },
-              filter: { duration: 2 }
+              scale: { duration: 24, repeat: Infinity, ease: "easeInOut" },
+              filter: { duration: 1.5, ease: "easeOut" }
             }}
-            className="w-full h-full origin-center"
+            className="w-full h-full origin-center relative"
           >
             <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-black/80 z-10" />
+
+            {/* Animated Ambient Sunlight */}
+            <motion.div
+              animate={{ opacity: [0.1, 0.25, 0.1], scale: [1, 1.1, 1], x: [0, 40, 0] }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-yellow-200/30 rounded-full blur-[120px] mix-blend-overlay z-10 pointer-events-none"
+            />
+            <motion.div
+              animate={{ opacity: [0.15, 0.3, 0.15], scale: [1, 1.2, 1], x: [0, -30, 0] }}
+              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-green-300/20 rounded-full blur-[100px] mix-blend-overlay z-10 pointer-events-none"
+            />
+
             <img
               src="/images/organic_hero.png"
               alt="Organic Farm"
@@ -142,9 +171,9 @@ export function Home({ onAddToCart }: HomeProps) {
         >
           {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 100, damping: 14, delay: 0.2 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
             className="mb-7"
           >
             <motion.span
@@ -173,36 +202,40 @@ export function Home({ onAddToCart }: HomeProps) {
           <motion.h1
             initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 60, damping: 16, delay: 0.35 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
             className="text-5xl lg:text-7xl xl:text-8xl mb-7 font-black tracking-tighter leading-[1.05] max-w-5xl text-white"
           >
             Purity You Can{" "}
             <motion.span
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6, duration: 0.7 }}
-              className="text-green-400 font-serif italic font-normal"
+              variants={typingContainer}
+              initial="hidden"
+              animate="visible"
+              className="font-serif italic font-normal inline-flex text-green-400"
             >
-              Trust
+              {"Trust".split("").map((char, index) => (
+                <motion.span key={index} variants={typingLetter}>{char}</motion.span>
+              ))}
             </motion.span>
             ,<br />
             Nature You Can{" "}
             <motion.span
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.75, duration: 0.7 }}
-              className="text-green-400 font-serif italic font-normal"
+              variants={typingContainer}
+              initial="hidden"
+              animate="visible"
+              className="font-serif italic font-normal inline-flex text-green-400"
             >
-              Taste
+              {"Taste".split("").map((char, index) => (
+                <motion.span key={index} variants={typingLetter}>{char}</motion.span>
+              ))}
             </motion.span>
             .
           </motion.h1>
 
           {/* Sub-headline */}
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 60, damping: 18, delay: 0.55 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.55 }}
             className="text-lg md:text-xl text-neutral-200/90 max-w-2xl font-light mb-12 leading-relaxed"
           >
             Ethically sourced, sustainably grown, and delivered fresh to your door.
@@ -210,9 +243,9 @@ export function Home({ onAddToCart }: HomeProps) {
 
           {/* CTA */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 90, damping: 14, delay: 0.75 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.7 }}
             className="flex flex-col items-center gap-5"
           >
             <Button
@@ -293,11 +326,11 @@ export function Home({ onAddToCart }: HomeProps) {
                   key={category}
                   onClick={() => setSelectedCategory(category)}
                   whileTap={{ scale: 0.93 }}
-                  className={`relative px-7 py-3 rounded-full text-sm font-bold whitespace-nowrap transition-colors duration-200 ${
-                    selectedCategory === category
+                  layout
+                  className={`relative px-7 py-3 rounded-full text-sm font-bold whitespace-nowrap transition-colors duration-200 ${selectedCategory === category
                       ? "text-white shadow-lg shadow-green-900/20"
                       : "text-neutral-600 hover:text-green-700 hover:bg-green-50 bg-white border border-neutral-200 shadow-sm"
-                  }`}
+                    }`}
                 >
                   {selectedCategory === category && (
                     <motion.div
@@ -314,26 +347,32 @@ export function Home({ onAddToCart }: HomeProps) {
 
           {/* Products Grid */}
           <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedCategory}
-              initial="hidden"
-              animate="visible"
-              exit={{ opacity: 0, y: 10 }}
-              variants={staggerContainer}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7"
-            >
-              {filteredProducts.map((product) => (
-                <motion.div
-                  key={product.id}
-                  variants={cardVariant}
-                  className="h-full flex"
-                >
-                  <div className="w-full">
-                    <ProductCard product={product} onAddToCart={onAddToCart} />
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
+            {filteredProducts.length > 0 && (
+              <motion.div
+                key={selectedCategory}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: 10 }}
+                variants={staggerContainer}
+                layout
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7"
+              >
+                {filteredProducts.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    variants={cardVariant}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    className="h-full flex relative group hover:shadow-[0_20px_40px_-15px_rgba(74,222,128,0.25)] hover:z-10 rounded-2xl transition-shadow duration-300"
+                    layout
+                  >
+                    <div className="w-full">
+                      <ProductCard product={product} onAddToCart={onAddToCart} />
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
           </AnimatePresence>
 
           {filteredProducts.length === 0 && (
@@ -354,19 +393,19 @@ export function Home({ onAddToCart }: HomeProps) {
         whileInView="visible"
         viewport={{ once: true, margin: "-60px" }}
         variants={smoothReveal}
-        className="relative bg-neutral-900 py-24 overflow-hidden"
+        className="relative bg-[#062c16] py-24 overflow-hidden"
       >
-        {/* Glowing orbs */}
+        {/* Glowing orbs (lite green colors) */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.08, 0.15, 0.08] }}
+            animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 right-1/4 w-96 h-96 bg-green-500 rounded-full blur-3xl"
+            className="absolute top-[-10%] right-[10%] w-[32rem] h-[32rem] bg-green-400 rounded-full blur-[120px]"
           />
           <motion.div
-            animate={{ scale: [1, 1.15, 1], opacity: [0.07, 0.13, 0.07] }}
+            animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.2, 0.1] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-            className="absolute bottom-0 left-1/4 w-[28rem] h-[28rem] bg-emerald-600 rounded-full blur-3xl"
+            className="absolute bottom-[-10%] left-[10%] w-[36rem] h-[36rem] bg-emerald-400/80 rounded-full blur-[120px]"
           />
         </div>
 
@@ -375,26 +414,26 @@ export function Home({ onAddToCart }: HomeProps) {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 60, damping: 16 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
           >
             <h2 className="text-4xl md:text-5xl font-black mb-5 text-white tracking-tight">
               Join the Organic Movement
             </h2>
-            <p className="text-neutral-400 mb-10 max-w-lg mx-auto text-lg leading-relaxed">
+            <p className="text-green-50/80 mb-10 max-w-lg mx-auto text-lg leading-relaxed">
               Subscribe for exclusive access to seasonal harvests, healthy living guides, and member-only benefits.
             </p>
             <div className="flex flex-col sm:flex-row justify-center max-w-xl mx-auto gap-3">
               <input
                 type="email"
                 placeholder="Enter your email address"
-                className="px-6 py-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white/10 text-white placeholder-neutral-500 flex-1 transition-all"
+                className="px-6 py-4 bg-white/[0.08] border border-green-400/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:bg-white/[0.12] text-white placeholder-green-100/50 flex-1 transition-all shadow-sm backdrop-blur-md"
               />
-              <Button className="bg-green-600 hover:bg-green-500 text-white rounded-xl px-8 py-6 font-bold shadow-lg hover:shadow-green-500/30 shrink-0">
+              <Button className="bg-green-500 hover:bg-green-400 text-green-950 rounded-xl px-8 py-6 font-extrabold shadow-lg shadow-green-500/20 shrink-0 transition-transform hover:scale-105">
                 Subscribe Now
               </Button>
             </div>
           </motion.div>
-          <div className="mt-20 pt-8 border-t border-white/10 text-sm text-neutral-500 font-medium">
+          <div className="mt-20 pt-8 border-t border-green-800/40 text-sm text-green-300/50 font-medium">
             © {new Date().getFullYear()} Danphe Organic. All rights reserved. Crafted carefully for nature.
           </div>
         </div>

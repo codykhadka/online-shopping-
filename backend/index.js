@@ -9,6 +9,19 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Default Home Route
+app.get('/', (req, res) => {
+  res.send(`
+    <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+      <h1 style="color: #166534;">🌱 Danphe Organic API is Running!</h1>
+      <p style="color: #4b5563;">You have successfully started the backend server.</p>
+      <div style="margin-top: 20px;">
+        <a href="/api/products" style="background: #16a34a; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: bold;">View Products API Data</a>
+      </div>
+    </div>
+  `);
+});
+
 // Mock Data (In a real app, this would be in a database)
 let users = [];
 let orders = [];
@@ -19,7 +32,7 @@ const products = [
     description: "100% natural and unprocessed raw honey harvested directly from wild forest bees.",
     price: 15.99,
     category: "Honey",
-    image: "/images/honey_jar.png",
+    image: "/honey_jar.png",
     rating: 4.9,
     inStock: true,
     features: ["No added sugar", "Rich in antioxidants", "Sustainably sourced"]
@@ -97,11 +110,11 @@ app.get('/api/products', (req, res) => {
 
 // Order Routes
 app.post('/api/orders', (req, res) => {
-  const order = { 
-    ...req.body, 
-    id: req.body.id || Math.random().toString(36).substr(2, 9), 
-    timestamp: req.body.timestamp || new Date().toISOString(), 
-    status: -1 
+  const order = {
+    ...req.body,
+    id: req.body.id || Math.random().toString(36).substr(2, 9),
+    timestamp: req.body.timestamp || new Date().toISOString(),
+    status: -1
   };
   orders.push(order);
   res.json({ success: true, order });
