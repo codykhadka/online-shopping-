@@ -1,0 +1,15 @@
+{
+  "id": "2",
+  "name": "A2 Cow Ghee",
+  "description": "Traditional bilona churned A2 cow ghee packed with rich aroma and nutritional benefits.",
+  "price": 24.99,
+  "category": "Ghee & Oils",
+  "image": "/images/cow_ghee.png",
+  "rating": 5,
+  "inStock": true,
+  "features": [
+    "Made from A2 cow milk",
+    "Traditional bilona method",
+    "Rich in Omega-3"
+  ]
+}

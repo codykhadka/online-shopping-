@@ -1,8 +1,16 @@
-import { Outlet, useNavigate, Link } from "react-router";
+import { Outlet, useNavigate, Link, useLocation } from "react-router";
 import { LayoutDashboard, Package, Users, Settings, LogOut, Bell, Search, Shield, Cpu, Activity } from "lucide-react";
+import { clearAdminSession, getAdminSession } from "../utils/adminAuth";
 
 export function AdminLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const admin = getAdminSession();
+
+  const handleLogout = () => {
+    clearAdminSession();
+    navigate("/admin/login");
+  };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-400 flex font-sans selection:bg-blue-500/30">
@@ -20,21 +28,25 @@ export function AdminLayout() {
           </Link>
           
           <nav className="space-y-1.5">
-            <NavItem icon={LayoutDashboard} label="Operations" active />
-            <NavItem icon={Package} label="Shipments" />
-            <NavItem icon={Users} label="Personnel" />
-            <NavItem icon={Activity} label="Monitoring" />
-            <NavItem icon={Settings} label="System Config" />
+            <NavItem icon={LayoutDashboard} label="Order Management" to="/admin/tracking" active={location.pathname === '/admin/tracking'} />
+            <NavItem icon={Package} label="Product Catalog" to="/admin/products" active={location.pathname === '/admin/products'} />
+            <NavItem icon={Users} label="Personnel" to="#" active={false} />
+            <NavItem icon={Activity} label="Monitoring" to="#" active={false} />
+            <NavItem icon={Settings} label="System Config" to="#" active={false} />
           </nav>
         </div>
         
         <div className="mt-auto p-4 border-t border-zinc-800 bg-zinc-900/30">
+          <div className="mb-3 px-3 py-2 bg-zinc-900 rounded-xl">
+            <p className="text-xs font-black text-zinc-100">{admin?.username || 'Admin'}</p>
+            <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">● Authorized</p>
+          </div>
           <button 
-            onClick={() => navigate("/")}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-all duration-200 group"
           >
             <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-semibold">Exit to Store</span>
+            <span className="text-sm font-semibold">Logout</span>
           </button>
         </div>
       </aside>
@@ -100,9 +112,9 @@ export function AdminLayout() {
   );
 }
 
-function NavItem({ icon: Icon, label, active = false }: { icon: any, label: string, active?: boolean }) {
+function NavItem({ icon: Icon, label, to, active = false }: { icon: any, label: string, to: string, active?: boolean }) {
   return (
-    <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+    <Link to={to} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
       active 
         ? "bg-blue-600/10 text-blue-500 border border-blue-500/20 font-bold" 
         : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
@@ -110,6 +122,6 @@ function NavItem({ icon: Icon, label, active = false }: { icon: any, label: stri
       <Icon size={18} className={active ? "text-blue-500" : "text-zinc-500"} />
       <span className="text-sm">{label}</span>
       {active && <div className="ml-auto size-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>}
-    </button>
+    </Link>
   );
 }

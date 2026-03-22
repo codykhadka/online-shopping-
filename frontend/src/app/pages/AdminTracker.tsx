@@ -5,6 +5,7 @@ import {
   Bell, AlertCircle, Check, X, MapPin
 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { Checkbox } from "../components/ui/checkbox";
 import { getOrders, updateOrderStatus, clearOrders, Order } from "../utils/storage";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
@@ -169,11 +170,9 @@ export function AdminTracker() {
               <thead>
                 <tr className="bg-zinc-900/50 border-b border-zinc-800">
                   <th className="p-4 w-12 text-center">
-                    <input 
-                      type="checkbox" 
-                      className="rounded border-zinc-700 bg-zinc-900"
+                    <Checkbox
                       checked={selectedOrderIds.length > 0 && selectedOrderIds.length === filteredOrders.length}
-                      onChange={() => setSelectedOrderIds(selectedOrderIds.length === filteredOrders.length ? [] : filteredOrders.map(o => o.id))}
+                      onCheckedChange={() => setSelectedOrderIds(selectedOrderIds.length === filteredOrders.length ? [] : filteredOrders.map(o => o.id))}
                     />
                   </th>
                   <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Deployment</th>
@@ -189,11 +188,9 @@ export function AdminTracker() {
                   return (
                     <tr key={order.id} className={`hover:bg-zinc-900/40 transition-colors ${isSelected ? "bg-blue-500/5" : ""} ${isPending ? "border-l-2 border-amber-500" : ""}`}>
                       <td className="p-4 text-center">
-                        <input 
-                          type="checkbox" 
-                          className="rounded border-zinc-700 bg-zinc-900"
+                        <Checkbox
                           checked={isSelected}
-                          onChange={() => setSelectedOrderIds(prev => prev.includes(order.id) ? prev.filter(i => i !== order.id) : [...prev, order.id])}
+                          onCheckedChange={() => setSelectedOrderIds(prev => prev.includes(order.id) ? prev.filter(i => i !== order.id) : [...prev, order.id])}
                         />
                       </td>
                       <td className="p-4">

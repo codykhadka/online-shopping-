@@ -17,7 +17,7 @@ interface CartProps {
 }
 
 export function Cart({ items, isOpen, onClose, onUpdateQuantity, onRemoveItem }: CartProps) {
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalRs = items.reduce((sum, item) => sum + Math.round((item.discountPrice || item.price) * 133) * item.quantity, 0);
   const [checkoutProduct, setCheckoutProduct] = useState<CartItem | null>(null);
 
   if (!isOpen) return null;
@@ -62,7 +62,14 @@ export function Cart({ items, isOpen, onClose, onUpdateQuantity, onRemoveItem }:
                   
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm mb-1 line-clamp-2">{item.name}</h3>
-                    <p className="text-sm mb-2">${item.price}</p>
+                    {item.discountPrice ? (
+                      <p className="text-sm mb-2">
+                        <span className="font-bold text-green-700">Rs {Math.round(item.discountPrice * 133).toLocaleString()}</span>
+                        <span className="text-xs text-gray-400 line-through ml-2">Rs {Math.round(item.price * 133).toLocaleString()}</span>
+                      </p>
+                    ) : (
+                      <p className="text-sm mb-2">Rs {Math.round(item.price * 133).toLocaleString()}</p>
+                    )}
                     
                     <div className="flex items-center gap-2">
                       <button
@@ -98,7 +105,7 @@ export function Cart({ items, isOpen, onClose, onUpdateQuantity, onRemoveItem }:
           <div className="border-t p-4 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-lg">Total:</span>
-              <span className="text-2xl">${total.toFixed(2)}</span>
+              <span className="text-2xl">Rs {totalRs.toLocaleString()}</span>
             </div>
             <Button
               className="w-full"

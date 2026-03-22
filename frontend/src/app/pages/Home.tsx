@@ -4,10 +4,13 @@ import { Product } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "../components/ui/button";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { Leaf, Award, Recycle, ChevronDown } from "lucide-react";
+import { Leaf, Award, Recycle, ChevronDown, CheckCircle2, Loader2 } from "lucide-react";
 
 interface HomeProps {
   onAddToCart: (product: Product) => void;
+  userRatings: { [key: string]: number };
+  onRate: (productId: string, rating: number) => void;
+  products: Product[];
 }
 
 // Typing animation variants
@@ -80,18 +83,9 @@ const features = [
   }
 ];
 
-export function Home({ onAddToCart }: HomeProps) {
-  const [products, setProducts] = useState<Product[]>([]);
+export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const { scrollY } = useScroll();
-
-  useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
-    fetch(`${apiUrl}/products`)
-      .then(res => res.json())
-      .then(data => setProducts(data))
-      .catch(err => console.error("Failed to fetch products", err));
-  }, []);
 
   const categories = ["All", ...new Set(products.map(p => p.category))];
 
@@ -110,7 +104,7 @@ export function Home({ onAddToCart }: HomeProps) {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-neutral-50"
     >
-      {/* ── HERO ─────────────────────────────────────── */}
+      {/* ... (Hero section remains unchanged) */}
       <section className="relative text-white min-h-[95vh] flex items-center justify-center overflow-hidden">
 
         {/* Parallax Background */}
@@ -159,8 +153,9 @@ export function Home({ onAddToCart }: HomeProps) {
           transition={{ duration: 3, delay: 1 }}
           className="absolute inset-0 z-10 flex items-end justify-center pb-10 pointer-events-none"
         >
-          <p className="text-[9vw] font-black tracking-tighter text-white/[0.04] select-none leading-none uppercase">
-            Danphe Organic
+          <p className="text-[9vw] font-black tracking-tighter text-yellow-400/15 select-none leading-none uppercase">
+            Danphe
+             Organic
           </p>
         </motion.div>
 
@@ -179,20 +174,20 @@ export function Home({ onAddToCart }: HomeProps) {
             <motion.span
               animate={{
                 boxShadow: [
-                  "0 0 0px 0px rgba(74,222,128,0)",
-                  "0 0 22px 7px rgba(74,222,128,0.3)",
-                  "0 0 0px 0px rgba(74,222,128,0)"
+                  "0 0 0px 0px rgba(234,179,8,0)",
+                  "0 0 22px 7px rgba(234,179,8,0.3)",
+                  "0 0 0px 0px rgba(234,179,8,0)"
                 ]
               }}
               transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-              className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-white/10 backdrop-blur-md border border-green-400/40 text-xs font-bold tracking-[0.2em] uppercase text-green-50"
+              className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-white/10 backdrop-blur-md border border-yellow-400/40 text-xs font-bold tracking-[0.2em] uppercase text-yellow-50"
             >
               <motion.span
                 animate={{ rotate: [0, 18, -8, 0] }}
                 transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.2 }}
                 className="flex"
               >
-                <Leaf size={13} className="text-green-400" />
+                <Leaf size={13} className="text-yellow-400" />
               </motion.span>
               100% Pure &amp; Natural
             </motion.span>
@@ -210,7 +205,7 @@ export function Home({ onAddToCart }: HomeProps) {
               variants={typingContainer}
               initial="hidden"
               animate="visible"
-              className="font-serif italic font-normal inline-flex text-green-400"
+              className="font-serif italic font-normal inline-flex text-yellow-400"
             >
               {"Trust".split("").map((char, index) => (
                 <motion.span key={index} variants={typingLetter}>{char}</motion.span>
@@ -222,7 +217,7 @@ export function Home({ onAddToCart }: HomeProps) {
               variants={typingContainer}
               initial="hidden"
               animate="visible"
-              className="font-serif italic font-normal inline-flex text-green-400"
+              className="font-serif italic font-normal inline-flex text-yellow-400"
             >
               {"Taste".split("").map((char, index) => (
                 <motion.span key={index} variants={typingLetter}>{char}</motion.span>
@@ -248,13 +243,18 @@ export function Home({ onAddToCart }: HomeProps) {
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.7 }}
             className="flex flex-col items-center gap-5"
           >
-            <Button
-              size="lg"
-              onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
-              className="bg-green-600 hover:bg-green-500 text-white rounded-full px-12 py-7 text-lg font-bold tracking-wide shadow-xl shadow-green-900/40 transition-all hover:scale-105 hover:shadow-green-700/50"
+            <motion.div
+              whileHover={{ scale: 1.07 }}
+              whileTap={{ scale: 0.97 }}
             >
-              Explore Collection
-            </Button>
+              <Button
+                size="lg"
+                onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
+                className="bg-green-600 hover:bg-green-500 text-white rounded-full px-12 py-7 text-lg font-bold tracking-wide shadow-xl shadow-green-900/40 transition-all hover:shadow-green-700/50"
+              >
+                Explore Collection
+              </Button>
+            </motion.div>
             <motion.div
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
@@ -264,6 +264,82 @@ export function Home({ onAddToCart }: HomeProps) {
             </motion.div>
           </motion.div>
         </motion.div>
+
+        {/* ── Floating Left Badge ── */}
+        <motion.div
+          initial={{ opacity: 0, x: -60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute left-6 bottom-28 z-30 hidden lg:block"
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-4 shadow-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="size-11 rounded-xl bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center text-xl">
+                🍯
+              </div>
+              <div>
+                <motion.p
+                  className="text-2xl font-black text-white leading-none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.8 }}
+                >
+                  5,000+
+                </motion.p>
+                <p className="text-[11px] text-white/60 font-bold uppercase tracking-widest mt-0.5">Happy Customers</p>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-1">
+              {[...Array(5)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 2 + i * 0.1, type: "spring" }}
+                  className="text-yellow-400 text-sm"
+                >⭐</motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* ── Floating Right Badge ── */}
+        <motion.div
+          initial={{ opacity: 0, x: 60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute right-6 bottom-32 z-30 hidden lg:block"
+        >
+          <motion.div
+            animate={{ y: [0, -12, 0] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-4 shadow-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="size-11 rounded-xl bg-green-400/20 border border-green-400/30 flex items-center justify-center text-xl">
+                🌿
+              </div>
+              <div>
+                <p className="text-sm font-black text-white leading-tight">100% Organic</p>
+                <p className="text-[11px] text-white/60 font-bold uppercase tracking-widest">Certified</p>
+              </div>
+            </div>
+            <div className="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 1.5, delay: 2, ease: "easeOut" }}
+                className="h-full bg-gradient-to-r from-green-400 to-emerald-300 rounded-full"
+              />
+            </div>
+            <p className="text-[10px] text-green-300/80 font-bold mt-1.5 uppercase tracking-widest">Purity Verified</p>
+          </motion.div>
+        </motion.div>
+
       </section>
 
       {/* ── FEATURES CARD ────────────────────────────── */}
@@ -280,7 +356,7 @@ export function Home({ onAddToCart }: HomeProps) {
             <motion.div
               key={f.title}
               variants={smoothReveal}
-              whileHover={{ scale: 1.03, backgroundColor: "rgba(240,253,244,0.5)" }}
+              whileHover={{ scale: 1.03, backgroundColor: "rgba(0, 240, 72, 0.5)" }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
               className="flex gap-5 items-start p-6 md:px-10 rounded-3xl cursor-default transition-colors"
             >
@@ -328,8 +404,8 @@ export function Home({ onAddToCart }: HomeProps) {
                   whileTap={{ scale: 0.93 }}
                   layout
                   className={`relative px-7 py-3 rounded-full text-sm font-bold whitespace-nowrap transition-colors duration-200 ${selectedCategory === category
-                      ? "text-white shadow-lg shadow-green-900/20"
-                      : "text-neutral-600 hover:text-green-700 hover:bg-green-50 bg-white border border-neutral-200 shadow-sm"
+                    ? "text-white shadow-lg shadow-green-900/20"
+                    : "text-neutral-600 hover:text-green-700 hover:bg-green-50 bg-white border border-neutral-200 shadow-sm"
                     }`}
                 >
                   {selectedCategory === category && (
@@ -346,43 +422,56 @@ export function Home({ onAddToCart }: HomeProps) {
           </motion.div>
 
           {/* Products Grid */}
-          <AnimatePresence mode="wait">
-            {filteredProducts.length > 0 && (
-              <motion.div
-                key={selectedCategory}
-                initial="hidden"
-                animate="visible"
-                exit={{ opacity: 0, y: 10 }}
-                variants={staggerContainer}
-                layout
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7"
-              >
-                {filteredProducts.map((product) => (
+          {products.length === 0 ? (
+            <div className="flex justify-center items-center py-24 text-green-600">
+              <Loader2 className="animate-spin" size={48} />
+            </div>
+          ) : (
+            <>
+              <AnimatePresence mode="wait">
+                {filteredProducts.length > 0 && (
                   <motion.div
-                    key={product.id}
-                    variants={cardVariant}
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    className="h-full flex relative group hover:shadow-[0_20px_40px_-15px_rgba(74,222,128,0.25)] hover:z-10 rounded-2xl transition-shadow duration-300"
+                    key={selectedCategory}
+                    initial="hidden"
+                    animate="visible"
+                    exit={{ opacity: 0, y: 10 }}
+                    variants={staggerContainer}
                     layout
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-7"
                   >
-                    <div className="w-full">
-                      <ProductCard product={product} onAddToCart={onAddToCart} />
-                    </div>
+                    {filteredProducts.map((product) => (
+                      <motion.div
+                        key={product.id}
+                        variants={cardVariant}
+                        whileHover={{ y: -8, scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        className="h-full flex relative group hover:shadow-[0_20px_40px_-15px_rgba(74,222,128,0.25)] hover:z-10 rounded-2xl transition-shadow duration-300"
+                        layout
+                      >
+                        <div className="w-full">
+                          <ProductCard 
+                            product={product} 
+                            onAddToCart={onAddToCart} 
+                            userRating={userRatings[product.id]}
+                            onRate={(r) => onRate(product.id, r)}
+                          />
+                        </div>
+                      </motion.div>
+                    ))}
                   </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                )}
+              </AnimatePresence>
 
-          {filteredProducts.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-20 text-neutral-400 text-lg font-medium"
-            >
-              No products found.
-            </motion.div>
+              {filteredProducts.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-20 text-neutral-400 text-lg font-medium"
+                >
+                  No products found.
+                </motion.div>
+              )}
+            </>
           )}
         </div>
       </section>

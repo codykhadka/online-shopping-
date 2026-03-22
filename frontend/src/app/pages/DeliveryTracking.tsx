@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { 
-  Package, Truck, CheckCircle, Clock, MapPin, 
+import {
+  Package, Truck, CheckCircle, Clock, MapPin,
   Phone, User, ChevronRight, Star, AlertCircle,
   MessageSquare, FastForward, ExternalLink
 } from "lucide-react";
@@ -38,7 +38,7 @@ export function DeliveryTracking() {
     };
 
     fetchOrderStatus();
-    
+
     const interval = setInterval(fetchOrderStatus, 3000); // Poll for status updates
 
     return () => clearInterval(interval);
@@ -66,22 +66,22 @@ export function DeliveryTracking() {
 
       {/* Hero Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatusCard 
-          label="Estimated Arrival" 
-          value="Today, 4:30 PM" 
-          icon={Clock} 
+        <StatusCard
+          label="Estimated Arrival"
+          value="Today, 4:30 PM"
+          icon={Clock}
           color="text-blue-600 bg-blue-50"
         />
-        <StatusCard 
-          label="Shipping From" 
-          value="Kathmandu Hub" 
-          icon={MapPin} 
+        <StatusCard
+          label="Shipping From"
+          value="Kathmandu Hub"
+          icon={MapPin}
           color="text-purple-600 bg-purple-50"
         />
-        <StatusCard 
-          label="Courier" 
-          value="Ram Bahadur" 
-          icon={User} 
+        <StatusCard
+          label="Courier"
+          value="Ram Bahadur"
+          icon={User}
           color="text-orange-600 bg-orange-50"
         />
       </div>
@@ -100,7 +100,7 @@ export function DeliveryTracking() {
             <div className="p-8 space-y-8 relative">
               {/* Connector Line */}
               <div className="absolute left-[3.25rem] top-10 bottom-10 w-0.5 bg-slate-100"></div>
-              
+
               {STEPS.map((step) => {
                 const isCompleted = currentStep > step.id;
                 const isActive = currentStep === step.id;
@@ -111,9 +111,9 @@ export function DeliveryTracking() {
                     {/* Step Indicator */}
                     <div className={`
                       relative z-10 size-10 rounded-2xl flex items-center justify-center transition-all duration-500 border-2
-                      ${isCompleted ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-200 scale-110" : 
-                        isActive ? "bg-white border-blue-600 text-blue-600 shadow-xl shadow-blue-100 scale-125 ring-4 ring-blue-50" : 
-                        "bg-white border-slate-200 text-slate-300"}
+                      ${isCompleted ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-200 scale-110" :
+                        isActive ? "bg-white border-blue-600 text-blue-600 shadow-xl shadow-blue-100 scale-125 ring-4 ring-blue-50" :
+                          "bg-white border-slate-200 text-slate-300"}
                     `}>
                       <Icon size={isCompleted ? 18 : 22} className={isCompleted ? "text-white" : ""} />
                     </div>
@@ -140,7 +140,7 @@ export function DeliveryTracking() {
           {/* Live Map Simulation Area */}
           {currentStep === 3 && (
             <div className="bg-white rounded-3xl overflow-hidden shadow-2xl relative h-80 border-4 border-white">
-               <LiveMap destination="Baluwatar-04, Kathmandu" />
+              <LiveMap destination="Baluwatar-04, Kathmandu" />
             </div>
           )}
         </div>
@@ -157,8 +157,8 @@ export function DeliveryTracking() {
               <p className="text-sm font-bold text-slate-800">Baluwatar-04, Kathmandu</p>
               <p className="text-xs text-slate-500 mt-1">Near Speaker's House, Nepal</p>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full text-xs font-bold gap-2 py-5 rounded-xl border-slate-200 hover:bg-slate-50"
               onClick={() => window.open('https://www.google.com/maps/search/?api=1&query=Baluwatar-04,+Kathmandu', '_blank')}
             >
@@ -168,16 +168,15 @@ export function DeliveryTracking() {
           </div>
 
           {/* Owner/Support Card */}
-          <div className={`p-6 rounded-3xl border transition-all duration-500 ${
-            currentStep === 1 
-              ? "bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-200" 
+          <div className={`p-6 rounded-3xl border transition-all duration-500 ${currentStep === 1
+              ? "bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-200"
               : "bg-white border-slate-200 text-slate-800"
-          }`}>
+            }`}>
             <h3 className={`font-bold mb-4 flex items-center gap-2 ${currentStep === 1 ? "text-white" : "text-slate-900"}`}>
               <Phone size={18} />
               Store Contact
             </h3>
-            
+
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className={`size-10 rounded-xl flex items-center justify-center font-bold ${currentStep === 1 ? "bg-white/20" : "bg-slate-100"}`}>
@@ -191,20 +190,18 @@ export function DeliveryTracking() {
 
               <div className={`p-3 rounded-2xl transition-colors ${currentStep === 1 ? "bg-white/10 border border-white/20" : "bg-slate-50 border border-slate-100"}`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${currentStep === 1 ? "text-blue-100" : "text-slate-400"}`}>Direct Line</p>
-                <p className="font-mono font-bold">+977 9841234567</p>
+                <p className="font-mono font-bold">+977 9766205175</p>
               </div>
 
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => alert('Calling owner...')}
-                  className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${
-                  currentStep === 1 ? "bg-white text-blue-600 hover:scale-[1.02]" : "bg-blue-600 text-white hover:bg-blue-700"
-                }`}>
+                  className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${currentStep === 1 ? "bg-white text-blue-600 hover:scale-[1.02]" : "bg-blue-600 text-white hover:bg-blue-700"
+                    }`}>
                   Call Now
                 </button>
-                <button className={`p-3 rounded-xl transition-all ${
-                  currentStep === 1 ? "bg-white/20 hover:bg-white/30" : "bg-slate-100 hover:bg-slate-200"
-                }`}>
+                <button className={`p-3 rounded-xl transition-all ${currentStep === 1 ? "bg-white/20 hover:bg-white/30" : "bg-slate-100 hover:bg-slate-200"
+                  }`}>
                   <MessageSquare size={16} />
                 </button>
               </div>

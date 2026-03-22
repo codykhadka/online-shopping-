@@ -1,22 +1,24 @@
-import { ShoppingCart, Search, Shield, User, LogOut, X, ArrowRight } from "lucide-react";
+import { ShoppingCart, Search, Shield, User, LogOut, X, ArrowRight, Star, BookOpen, Package } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { Badge } from "./ui/badge";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "motion/react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../AuthProvider";
-import { products } from "../data/products";
+import { Product } from "../data/products";
 
 interface HeaderProps {
   cartItemCount: number;
   onCartClick: () => void;
+  products: Product[];
 }
 
-export function Header({ cartItemCount, onCartClick }: HeaderProps) {
+export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
   const { user, logout, openLoginModal } = useAuth();
   const isUserAuthenticated = user !== null;
   const [scrolled, setScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [typedOrganic, setTypedOrganic] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { scrollY } = useScroll();
   const location = useLocation();
@@ -28,6 +30,18 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 60);
   });
+
+  // Typing effect for "Organic"
+  useEffect(() => {
+    const organic = "Organic";
+    let i = 0;
+    const interval = setInterval(() => {
+      setTypedOrganic(organic.slice(0, i + 1));
+      i++;
+      if (i === organic.length) clearInterval(interval);
+    }, 150);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-focus when search opens
   useEffect(() => {
@@ -49,9 +63,9 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
 
   const searchResults = searchQuery.trim().length > 0
     ? products.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 6)
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase())
+    ).slice(0, 6)
     : [];
 
   const handleProductClick = (id: string) => {
@@ -65,11 +79,10 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed top-0 z-50 w-full transition-all duration-500 ${
-          isTransparent
+        className={`fixed top-0 z-50 w-full transition-all duration-500 ${isTransparent
             ? "bg-transparent border-b border-white/0"
             : "bg-white/90 backdrop-blur-xl shadow-md shadow-neutral-200/50 border-b border-neutral-100"
-        }`}
+          }`}
       >
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 group">
@@ -79,20 +92,19 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
               transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
               className="size-8 rounded-lg bg-green-600 flex items-center justify-center transition-transform group-hover:scale-110 shadow-md"
             >
-              <span className="text-white font-bold text-sm">D</span>
+              <span className="text-white font-bold text-sm tracking-wide">D</span>
             </motion.div>
             <span className={`text-xl font-black tracking-tight transition-colors duration-300 ${!isTransparent ? "text-neutral-900" : "text-white"}`}>
-              Danphe <span className="text-green-400">Organic</span>
+              <span className="text-red-500 logo-letter">D</span><span className="text-blue-500 logo-letter">a</span><span className="text-green-500 logo-letter">n</span><span className="text-purple-500 logo-letter">p</span><span className="text-pink-500 logo-letter">h</span><span className="text-orange-500 logo-letter">e</span>  <span className="text-yellow-300 logo-letter">{typedOrganic}</span>
             </span>
           </Link>
 
           <div className="flex items-center gap-3">
             {isUserAuthenticated ? (
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-300 ${
-                !isTransparent
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-300 ${!isTransparent
                   ? "bg-green-50 border-green-100"
                   : "bg-white/10 border-white/20 backdrop-blur-md"
-              }`}>
+                }`}>
                 <User size={14} className={!isTransparent ? "text-green-600" : "text-green-300"} />
                 <span className={`text-xs font-bold transition-colors duration-300 ${!isTransparent ? "text-green-700" : "text-white"}`}>{user?.name}</span>
                 <button
@@ -104,7 +116,7 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => navigate("/login")}
                 className={`text-xs font-bold transition-colors duration-300 ${!isTransparent ? "text-slate-500 hover:text-green-600" : "text-white/80 hover:text-white"}`}
               >
@@ -119,6 +131,34 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
             >
               <Shield className="size-5" />
             </Link>
+
+            <Link
+              to="/ratings"
+              className={`p-2 rounded-lg transition-colors duration-300 ${!isTransparent ? "hover:bg-gray-100 text-slate-500 hover:text-slate-900" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+              title="Product Ratings"
+            >
+              <Star className="size-5" />
+            </Link>
+
+            <Link
+              to="/how-to-make"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-300 ${!isTransparent ? "hover:bg-green-50 text-green-700 border border-green-200 bg-green-50" : "text-white/80 hover:text-white hover:bg-white/10 border border-white/20"}`}
+              title="How-To Guides"
+            >
+              <BookOpen className="size-4" />
+              How-To
+            </Link>
+
+            {isUserAuthenticated && (
+              <Link
+                to="/my-orders"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-300 ${!isTransparent ? "hover:bg-blue-50 text-blue-700 border border-blue-200 bg-blue-50" : "text-white/80 hover:text-white hover:bg-white/10 border border-white/20"}`}
+                title="Your Orders"
+              >
+                <Package className="size-4" />
+                Your Orders
+              </Link>
+            )}
 
             {/* Search Button */}
             <button
@@ -236,7 +276,16 @@ export function Header({ cartItemCount, onCartClick }: HeaderProps) {
                           <p className="text-xs text-green-600 font-semibold">{product.category}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-black text-neutral-800">${product.price}</span>
+                          <div className="flex flex-col text-right">
+                            {product.discountPrice ? (
+                              <>
+                                <span className="font-black text-green-600 leading-none">${product.discountPrice}</span>
+                                <span className="text-[10px] text-neutral-400 line-through">${product.price}</span>
+                              </>
+                            ) : (
+                              <span className="font-black text-neutral-800">${product.price}</span>
+                            )}
+                          </div>
                           <ArrowRight size={15} className="text-neutral-300 group-hover:text-green-500 transition-colors" />
                         </div>
                       </motion.button>
