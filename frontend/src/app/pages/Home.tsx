@@ -4,7 +4,10 @@ import { Product } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "../components/ui/button";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { Leaf, Award, Recycle, ChevronDown, CheckCircle2, Loader2 } from "lucide-react";
+import { Leaf, Award, Recycle, ChevronDown, CheckCircle2, Loader2, Send } from "lucide-react";
+import { toast } from "sonner";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
 interface HomeProps {
   onAddToCart: (product: Product) => void;
@@ -85,6 +88,8 @@ const features = [
 
 export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const { scrollY } = useScroll();
 
   const categories = ["All", ...new Set(products.map(p => p.category))];
@@ -96,6 +101,36 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
   const filteredProducts = selectedCategory === "All"
     ? products
     : products.filter(p => p.category === selectedCategory);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim() || !newsletterEmail.includes('@')) {
+      return toast.error("Please enter a valid email address.");
+    }
+
+    setIsSubscribing(true);
+    try {
+      const res = await fetch(`${API_URL}/subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newsletterEmail.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Welcome! Check your 'Identity' for a surprise incoming.", {
+          description: "Owner notified. You're now part of the movement.",
+          icon: <Leaf className="text-green-500" />
+        });
+        setNewsletterEmail("");
+      } else {
+        toast.error(data.error || "Subscription failure.");
+      }
+    } catch {
+      toast.error("Network instability. Please try again.");
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
   return (
     <motion.div
@@ -511,16 +546,28 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
             <p className="text-green-50/80 mb-10 max-w-lg mx-auto text-lg leading-relaxed">
               Subscribe for exclusive access to seasonal harvests, healthy living guides, and member-only benefits.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center max-w-xl mx-auto gap-3">
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row justify-center max-w-xl mx-auto gap-3">
               <input
                 type="email"
+                required
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email address"
-                className="px-6 py-4 bg-white/[0.08] border border-green-400/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:bg-white/[0.12] text-white placeholder-green-100/50 flex-1 transition-all shadow-sm backdrop-blur-md"
+                disabled={isSubscribing}
+                className="px-6 py-4 bg-white/[0.08] border border-green-400/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:bg-white/[0.12] text-white placeholder-green-100/50 flex-1 transition-all shadow-sm backdrop-blur-md disabled:opacity-50"
               />
-              <Button className="bg-green-500 hover:bg-green-400 text-green-950 rounded-xl px-8 py-6 font-extrabold shadow-lg shadow-green-500/20 shrink-0 transition-transform hover:scale-105">
-                Subscribe Now
+              <Button 
+                type="submit"
+                disabled={isSubscribing}
+                className="bg-green-500 hover:bg-green-400 text-green-950 rounded-xl px-8 py-6 font-extrabold shadow-lg shadow-green-500/20 shrink-0 transition-transform hover:scale-105 disabled:hover:scale-100"
+              >
+                {isSubscribing ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <>Subscribe Now <Send size={18} className="ml-2" /></>
+                )}
               </Button>
-            </div>
+            </form>
           </motion.div>
           <div className="mt-20 pt-8 border-t border-green-800/40 text-sm text-green-300/50 font-medium">
             © {new Date().getFullYear()} Danphe Organic. All rights reserved. Crafted carefully for nature.

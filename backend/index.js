@@ -18,20 +18,19 @@ app.use(express.json({ limit: '50mb' }));
 // ── SQLite Database Setup ─────────────────────────────────────────────────────
 const db = new Database(path.join(__dirname, 'database.sqlite'));
 
-try {
-  db.exec("DROP TABLE IF EXISTS users");
-} catch (e) {
-  console.error("Could not drop users table", e);
-}
+// db.exec("DROP TABLE IF EXISTS users");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
-    id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    name     TEXT    NOT NULL,
-    username TEXT    NOT NULL UNIQUE,
-    password TEXT    NOT NULL,
-    role     TEXT    DEFAULT 'user',
-    created_at TEXT DEFAULT (datetime('now'))
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    name         TEXT    NOT NULL,
+    username     TEXT    NOT NULL UNIQUE,
+    password     TEXT    NOT NULL,
+    role         TEXT    DEFAULT 'user',
+    email        TEXT    UNIQUE,
+    reset_token  TEXT,
+    token_expiry TEXT,
+    created_at   TEXT    DEFAULT (datetime('now'))
   )
 `);
 
@@ -104,8 +103,49 @@ function rowToProduct(row) {
   };
 }
 
-// Orders stored in-memory (can be moved to SQLite later)
-let orders = [];
+// ── Database Schema Updates ──────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS orders (
+    id           TEXT PRIMARY KEY,
+    customerName TEXT    NOT NULL,
+    productName  TEXT    NOT NULL,
+    price        REAL    NOT NULL,
+    status       INTEGER DEFAULT -1,
+    timestamp    TEXT    DEFAULT (datetime('now')),
+    address      TEXT    NOT NULL,
+    phone        TEXT    NOT NULL,
+    assigned_to  INTEGER DEFAULT NULL,
+    FOREIGN KEY(assigned_to) REFERENCES users(id)
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS notifications (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    title     TEXT    NOT NULL,
+    message   TEXT    NOT NULL,
+    type      TEXT    DEFAULT 'info',
+    read      INTEGER DEFAULT 0,
+    created_at TEXT   DEFAULT (datetime('now'))
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS system_config (
+    key       TEXT PRIMARY KEY,
+    value     TEXT    NOT NULL
+  )
+`);
+
+// Seed default config
+const configCount = db.prepare("SELECT COUNT(*) as c FROM system_config").get();
+if (configCount.c === 0) {
+  const insert = db.prepare("INSERT INTO system_config (key, value) VALUES (?, ?)");
+  insert.run('store_name', 'Danphe Organic');
+  insert.run('delivery_charge_standard', '150');
+  insert.run('delivery_charge_express', '300');
+  insert.run('currency', 'Rs.');
+}
 
 // ── Default Home Route ────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
@@ -113,9 +153,6 @@ app.get('/', (req, res) => {
     <div style="font-family: sans-serif; text-align: center; padding: 50px;">
       <h1 style="color: #166534;">🌱 Danphe Organic API is Running!</h1>
       <p style="color: #4b5563;">You have successfully started the backend server.</p>
-      <div style="margin-top: 20px;">
-        <a href="/api/products" style="background: #16a34a; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: bold;">View Products API Data</a>
-      </div>
     </div>
   `);
 });
@@ -159,9 +196,76 @@ app.post('/api/auth/login', (req, res) => {
   res.json({ success: true, user: { name: user.name, username: user.username } });
 });
 
+// ── Account Recovery Protocols ────────────────────────────────────────────────
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { username } = req.body;
+  try {
+    const user = db.prepare('SELECT id, username FROM users WHERE username = ?').get(username);
+    if (!user) return res.status(404).json({ success: false, error: 'Identity not found.' });
+
+    // Generate a secure 6-digit protocol token
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
+    db.prepare('UPDATE users SET reset_token = ?, token_expiry = ? WHERE id = ?').run(token, expiry, user.id);
+    
+    // IMPORTANT: In a real app, this would be sent via email.
+    // For this demonstration, we log it to the console for the user to retrieve.
+    console.log(`\n[SECURITY PROTOCOL] Recovery Token for @${username}: ${token}\n`);
+    
+    res.json({ success: true, message: 'Recovery token dispatched.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Protocol initiation failed.' });
+  }
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { token, newPassword } = req.body;
+  try {
+    const user = db.prepare('SELECT id FROM users WHERE reset_token = ? AND token_expiry > ?').get(token, new Date().toISOString());
+    if (!user) return res.status(400).json({ success: false, error: 'Invalid or expired protocol token.' });
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    db.prepare('UPDATE users SET password = ?, reset_token = NULL, token_expiry = NULL WHERE id = ?').run(hashedPassword, user.id);
+    
+    res.json({ success: true, message: 'Identity restored successfully.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Identity restoration failed.' });
+  }
+});
+
 // ── API Discovery ─────────────────────────────────────────────────────────────
 app.get('/api', (req, res) => {
   res.json({ status: 'active', message: 'Danphe Organic API is running', version: '2.0.0' });
+});
+
+// ── Newsletter Subscription ───────────────────────────────────────────────────
+app.post('/api/subscribe', (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ success: false, error: 'Valid email required' });
+  }
+
+  try {
+    // Insert notification for admin/owner
+    db.prepare('INSERT INTO notifications (title, message, type) VALUES (?, ?, ?)')
+      .run('New Newsletter Subscriber', `Identity ${email} has joined the movement.`, 'info');
+    
+    // Subscriber-side Mock Notification (Owner can see this in the logs)
+    console.log(`\n\x1b[36m(MOCK EMAIL) [TO: ${email}]`);
+    console.log(`SUBJECT: Welcome to the Danphe Organic Movement!`);
+    console.log(`BODY: Thank you for subscribing. Your identity is now part of our sustainable future. 🌿\x1b[0m`);
+
+    // Owner-side Mock Notification
+    console.log(`\x1b[33m(MOCK EMAIL) [TO: OWNER@DANPHE.ORG]`);
+    console.log(`SUBJECT: New Subscriber Alert!`);
+    console.log(`BODY: A new identity (${email}) has joined the movement via the footer protocol.\x1b[0m\n`);
+    
+    console.log(`\x1b[32m[NEWSLETTER] New subscriber registered: ${email}\x1b[0m`);
+    res.json({ success: true, message: 'Welcome to the movement!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Subscription failed' });
+  }
 });
 
 // ── Product Routes (SQLite — persists across restarts) ───────────────────────
@@ -213,22 +317,143 @@ app.delete('/api/products/:id', (req, res) => {
   res.json({ success: true, product: rowToProduct(existing) });
 });
 
-// ── Order Routes ──────────────────────────────────────────────────────────────
+// ── Order Routes (SQLite) ──────────────────────────────────────────────────────
 app.post('/api/orders', (req, res) => {
-  const order = { ...req.body, id: req.body.id || Math.random().toString(36).substr(2, 9), timestamp: req.body.timestamp || new Date().toISOString(), status: -1 };
-  orders.push(order);
-  res.json({ success: true, order });
+  const { id, customerName, productName, price, address, phone } = req.body;
+  const orderId = id || Math.random().toString(36).substr(2, 9);
+  const timestamp = new Date().toISOString();
+  
+  try {
+    db.prepare(`
+      INSERT INTO orders (id, customerName, productName, price, address, phone, timestamp, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, -1)
+    `).run(orderId, customerName, productName, price, address, phone, timestamp);
+    
+    // Create a notification for the admin
+    db.prepare(`
+      INSERT INTO notifications (title, message, type)
+      VALUES (?, ?, ?)
+    `).run('New Order Inbound', `Order #ORD-${orderId} received from ${customerName}`, 'order');
+    
+    res.json({ success: true, order: { id: orderId, customerName, productName, price, address, phone, timestamp, status: -1 } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Could not create order: ' + err.message });
+  }
 });
 
-app.get('/api/orders', (req, res) => { res.json(orders); });
+app.get('/api/orders', (req, res) => { 
+  try {
+    const rows = db.prepare('SELECT * FROM orders ORDER BY timestamp DESC').all();
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 app.patch('/api/orders/:id/status', (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  const index = orders.findIndex(o => o.id === id);
-  if (index === -1) return res.status(404).json({ success: false, error: 'Order not found.' });
-  orders[index].status = status;
-  res.json({ success: true, order: orders[index] });
+  
+  try {
+    const result = db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
+    if (result.changes === 0) return res.status(404).json({ success: false, error: 'Order not found.' });
+    
+    // Notification for status change
+    const statusLabels = ["Confirmed", "Prepared", "Shipping", "Completed"];
+    const label = status >= 0 && status < statusLabels.length ? statusLabels[status] : "Updated";
+    db.prepare(`
+      INSERT INTO notifications (title, message, type)
+      VALUES (?, ?, ?)
+    `).run('Status Update', `Order #ORD-${id} status changed to ${label}`, 'info');
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Notification Routes ───────────────────────────────────────────────────────
+app.get('/api/admin/notifications', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50').all();
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/notifications/read', (req, res) => {
+  const { ids } = req.body; // Array of notification IDs
+  try {
+    if (ids && ids.length > 0) {
+      const placeholders = ids.map(() => '?').join(',');
+      db.prepare(`UPDATE notifications SET read = 1 WHERE id IN (${placeholders})`).run(...ids);
+    } else {
+      db.prepare('UPDATE notifications SET read = 1').run();
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── System Config Routes ──────────────────────────────────────────────────────
+app.get('/api/admin/config', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM system_config').all();
+    const config = {};
+    rows.forEach(r => config[r.key] = r.value);
+    res.json(config);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/config', (req, res) => {
+  const updates = req.body; // e.g., { store_name: 'New Name', ... }
+  try {
+    const stmt = db.prepare('INSERT OR REPLACE INTO system_config (key, value) VALUES (?, ?)');
+    const transaction = db.transaction((data) => {
+      for (const [key, value] of Object.entries(data)) {
+        stmt.run(key, String(value));
+      }
+    });
+    transaction(updates);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Personnel Routes ──────────────────────────────────────────────────────────
+app.get('/api/admin/personnel', (req, res) => {
+  try {
+    // Strictly select only non-sensitive public fields
+    const rows = db.prepare("SELECT id, name, role FROM users WHERE role = 'delivery' OR role = 'admin'").all();
+    // Add some mock status for now
+    const personnel = rows.map(p => ({
+      ...p,
+      status: Math.random() > 0.5 ? 'Online' : 'Offline',
+      lastActive: new Date().toISOString()
+    }));
+    res.json(personnel);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ── Global Error Shield ───────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('\x1b[31m[CRITICAL PROTOCOL FAILURE]\x1b[0m', err.stack);
+  res.status(500).json({ success: false, error: 'Internal system fault', stack: err.message });
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('\x1b[31m[FATAL UNCAUGHT EXCEPTION]\x1b[0m', err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('\x1b[31m[FATAL UNHANDLED REJECTION]\x1b[0m', reason);
 });
 
 app.listen(PORT, '0.0.0.0', () => {

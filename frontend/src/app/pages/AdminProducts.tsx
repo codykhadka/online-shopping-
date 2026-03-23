@@ -30,7 +30,7 @@ const EMPTY_FORM = {
   inStock: true,
 };
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
 // Safe JSON fetch — shows a clear error if backend isn't running
 async function apiFetch(url: string, options?: RequestInit) {

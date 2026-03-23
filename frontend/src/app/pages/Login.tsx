@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../AuthProvider";
 import { useNavigate, useLocation } from "react-router";
 import { Button } from "../components/ui/button";
-import { User, Lock, ArrowRight, Leaf, UserPlus, LogIn, ChevronLeft } from "lucide-react";
+import { User, Lock, ArrowRight, Leaf, UserPlus, LogIn, ChevronLeft, Key, Send, Shield, X as CloseIcon } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -17,6 +17,14 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<"request" | "reset">("request");
+  const [recoveryUsername, setRecoveryUsername] = useState("");
+  const [recoveryToken, setRecoveryToken] = useState("");
+  const [recoveryNewPassword, setRecoveryNewPassword] = useState("");
+  const [isRecovering, setIsRecovering] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
   // Redirect if already logged in
   useEffect(() => {
@@ -76,6 +84,55 @@ export function LoginPage() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleRecoveryRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryUsername.trim()) return toast.error("Please enter your username.");
+    setIsRecovering(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: recoveryUsername.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Recovery code sent to your account.");
+        setRecoveryStep("reset");
+      } else {
+        toast.error(data.error || "Account not found.");
+      }
+    } catch {
+      toast.error("Network error.");
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
+  const handleRecoveryReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryToken.trim() || !recoveryNewPassword.trim()) return toast.error("Fill in all fields.");
+    setIsRecovering(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: recoveryToken.trim(), newPassword: recoveryNewPassword }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Password updated! Please log in.");
+        setShowRecovery(false);
+        setRecoveryStep("request");
+      } else {
+        toast.error(data.error || "Invalid code.");
+      }
+    } catch {
+      toast.error("Operation failed.");
+    } finally {
+      setIsRecovering(false);
     }
   };
 
@@ -232,7 +289,13 @@ export function LoginPage() {
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-black uppercase tracking-widest text-neutral-400">Password</label>
                 {mode === "signin" && (
-                  <button type="button" className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors">Forgot?</button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowRecovery(true)}
+                    className="text-xs font-bold text-green-600 hover:text-green-700 transition-colors"
+                  >
+                    Forgot?
+                  </button>
                 )}
               </div>
               <div className="relative group">
@@ -288,6 +351,98 @@ export function LoginPage() {
           </p>
         </motion.div>
       </div>
+
+      {/* Recovery Modal */}
+      <AnimatePresence>
+        {showRecovery && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowRecovery(false)}
+              className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl relative z-10 overflow-hidden"
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowRecovery(false)}
+                className="absolute top-6 right-6 p-2 text-neutral-400 hover:text-neutral-900 transition-colors"
+              >
+                <CloseIcon size={20} />
+              </button>
+
+              <div className="flex flex-col items-center mb-8 text-center pt-4">
+                <div className="size-16 bg-green-500 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-green-500/20">
+                  <Key size={28} className="text-white" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Recovery Plan</h3>
+              </div>
+
+              {recoveryStep === "request" ? (
+                <form onSubmit={handleRecoveryRequest} className="space-y-6">
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-black uppercase tracking-widest text-neutral-400 ml-1">Username</label>
+                    <div className="relative group">
+                      <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-green-600 transition-colors" />
+                      <input
+                        type="text"
+                        value={recoveryUsername}
+                        onChange={e => setRecoveryUsername(e.target.value)}
+                        placeholder="Your username"
+                        className="w-full pl-12 pr-4 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl outline-none focus:ring-4 focus:ring-green-50 focus:border-green-500 transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    type="submit"
+                    disabled={isRecovering}
+                    className="w-full py-7 bg-neutral-900 hover:bg-black text-white rounded-2xl font-bold flex items-center justify-center gap-2 group"
+                  >
+                    {isRecovering ? "Sending Pulse..." : "Send Verification"}
+                    <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleRecoveryReset} className="space-y-4">
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-black uppercase tracking-widest text-neutral-400 ml-1">Reset Code</label>
+                    <input
+                      type="text"
+                      value={recoveryToken}
+                      onChange={e => setRecoveryToken(e.target.value)}
+                      placeholder="Enter verification code"
+                      className="w-full px-4 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl outline-none focus:ring-4 focus:ring-green-50 focus:border-green-500 transition-all font-medium text-center"
+                    />
+                  </div>
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-black uppercase tracking-widest text-neutral-400 ml-1">New Password</label>
+                    <input
+                      type="password"
+                      value={recoveryNewPassword}
+                      onChange={e => setRecoveryNewPassword(e.target.value)}
+                      placeholder="New password"
+                      className="w-full px-4 py-4 bg-neutral-50 border border-neutral-100 rounded-2xl outline-none focus:ring-4 focus:ring-green-50 focus:border-green-500 transition-all font-medium"
+                    />
+                  </div>
+                  <Button 
+                    type="submit"
+                    disabled={isRecovering}
+                    className="w-full py-7 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold mt-2"
+                  >
+                    {isRecovering ? "Updating..." : "Secure Account"}
+                  </Button>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

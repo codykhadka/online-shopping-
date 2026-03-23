@@ -14,6 +14,9 @@ import { NotFound } from "./pages/NotFound";
 import { Ratings } from "./pages/Ratings";
 import { HowToMake } from "./pages/HowToMake";
 import { MyOrders } from "./pages/MyOrders";
+import { AdminConfig } from "./pages/AdminConfig";
+import { AdminPersonnel } from "./pages/AdminPersonnel";
+import { AdminMonitoring } from "./pages/AdminMonitoring";
 import { useOutletContext } from "react-router";
 import { Product } from "./data/products";
 import { useAuth, AuthProvider } from "./AuthProvider";
@@ -175,6 +178,18 @@ export const router = createBrowserRouter([
               {
                 path: "products",
                 Component: AdminProducts,
+              },
+              {
+                path: "personnel",
+                Component: AdminPersonnel,
+              },
+              {
+                path: "monitoring",
+                Component: AdminMonitoring,
+              },
+              {
+                path: "config",
+                Component: AdminConfig,
               },
             ],
           },

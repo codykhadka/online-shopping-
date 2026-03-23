@@ -10,8 +10,8 @@ export function NotFound() {
         <p className="text-gray-600 mb-6">
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <Link to="/">
-          <Button size="lg">Back to Home</Button>
+        <Link to="/login">
+          <Button size="lg">Back to Login</Button>
         </Link>
       </div>
     </div>

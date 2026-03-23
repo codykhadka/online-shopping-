@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { 
   Package, Truck, CheckCircle, Clock, ChevronRight, 
   Search, RotateCcw, ListFilter, Activity, Zap, 
-  Bell, AlertCircle, Check, X, MapPin
+  Bell, AlertCircle, Check, X, MapPin, RefreshCw
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
@@ -15,6 +15,13 @@ const statusLabels = [
   "Prepared",
   "Shipping",
   "Completed"
+];
+
+const statusActions = [
+  "Confirm Order",
+  "Mark Prepared",
+  "Start Shipping",
+  "Mark Completed"
 ];
 
 const statusIcons = [
@@ -38,6 +45,9 @@ export function AdminTracker() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<number | "all" | "pending">("all");
   const [activities, setActivities] = useState<{id: string, orderId: string, action: string, timestamp: string}[]>([]);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [isLoading, setIsLoading] = useState(false);
 
   // Sound effect simulation for notifications
   const playNotification = (count: number, lastOrder?: Order) => {
@@ -49,6 +59,7 @@ export function AdminTracker() {
   };
 
   const loadOrders = async () => {
+    setIsLoading(true);
     const freshOrders = await getOrders();
     const pendingOrders = freshOrders.filter(o => o.status === -1);
     
@@ -57,17 +68,24 @@ export function AdminTracker() {
       playNotification(pendingOrders.length, pendingOrders[0]);
     }
     setOrders(freshOrders);
+    setIsLoading(false);
+    setLastRefreshed(new Date());
   };
 
   useEffect(() => {
     loadOrders();
     window.addEventListener('storage', loadOrders);
-    const interval = setInterval(loadOrders, 2000); // Poll for new orders
+    
+    let interval: any;
+    if (autoRefresh) {
+      interval = setInterval(loadOrders, 5000); 
+    }
+    
     return () => {
       window.removeEventListener('storage', loadOrders);
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
-  }, [orders.length]);
+  }, [autoRefresh]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
@@ -110,16 +128,42 @@ export function AdminTracker() {
               <p className="text-[10px] text-blue-300 font-black uppercase tracking-widest">Awaiting Admin Clearance</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setStatusFilter("pending")}
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-[10px] font-black uppercase tracking-widest"
-          >
-            Review Dispatch
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setStatusFilter("pending")}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-[10px] font-black uppercase tracking-widest"
+            >
+              Review Dispatch
+            </Button>
+            <div className="h-6 w-px bg-zinc-800 mx-2"></div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${autoRefresh ? 'bg-blue-600/10 border-blue-500/30 text-blue-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
+              >
+                <div className={`size-1.5 rounded-full ${autoRefresh ? 'bg-blue-500 animate-pulse' : 'bg-zinc-700'}`}></div>
+                <span className="text-[9px] font-black uppercase tracking-widest">Auto-Sync</span>
+              </button>
+              <button 
+                onClick={loadOrders}
+                className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white transition-colors"
+                title="Manual Refresh"
+              >
+                <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      <div className="flex items-center justify-between text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+        <span>Active Telemetry</span>
+        <span className="flex items-center gap-1.5 text-[10px]">
+          Last Updated: {lastRefreshed.toLocaleTimeString()}
+        </span>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -212,29 +256,52 @@ export function AdminTracker() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-3">
                           {isPending ? (
-                            <button 
-                              onClick={() => handleUpdateStatus([order.id], 0)}
-                              className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-900/20"
-                              title="Accept & Confirm Order"
-                            >
-                              <Check size={16} />
-                            </button>
-                          ) : order.status < 3 && (
-                            <button 
-                              onClick={() => handleUpdateStatus([order.id], order.status + 1)}
-                              className="p-1.5 bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-lg hover:text-white hover:border-zinc-500 transition-colors"
-                              title="Advance Dispatch Step"
-                            >
-                              <ArrowRight size={16} className="" />
-                            </button>
+                            <div className="flex gap-2 min-w-[140px]">
+                              <button 
+                                onClick={() => handleUpdateStatus([order.id], 0)}
+                                className="flex-1 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-900/40 text-[10px] font-black uppercase tracking-widest border border-blue-400/30 active:scale-95"
+                              >
+                                Confirm
+                              </button>
+                              <button 
+                                onClick={() => handleUpdateStatus([order.id], -2)} 
+                                className="px-3 py-1.5 bg-zinc-900 text-zinc-500 rounded-lg hover:bg-zinc-800 hover:text-zinc-300 transition-colors text-[10px] font-black uppercase border border-zinc-800"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center p-1 bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden self-start">
+                              {statusLabels.map((label, idx) => {
+                                const isCurrent = order.status === idx;
+                                const isPast = order.status > idx;
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => handleUpdateStatus([order.id], idx)}
+                                    className={`relative z-10 px-2 py-1 text-[8px] font-black uppercase tracking-tighter transition-all whitespace-nowrap border-r last:border-r-0 border-zinc-800/50
+                                      ${isCurrent 
+                                        ? "bg-blue-600 text-white shadow-xl shadow-blue-900/20" 
+                                        : isPast 
+                                          ? "text-blue-500/20 text-blue-400/60" 
+                                          : "text-zinc-700 hover:text-zinc-400"
+                                      }`}
+                                    title={label}
+                                  >
+                                    {label.slice(0, 4)}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           )}
                           <button 
                             onClick={() => window.open(`/tracking/${order.id}`, '_blank')}
-                            className="p-1.5 text-zinc-600 hover:text-blue-500"
+                            className="p-2 text-zinc-600 hover:text-blue-500 hover:bg-zinc-800 rounded-lg transition-colors"
+                            title="Open Customer View"
                           >
-                            <ChevronRight size={18} />
+                            <ChevronRight size={16} />
                           </button>
                         </div>
                       </td>
