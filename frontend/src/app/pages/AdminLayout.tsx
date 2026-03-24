@@ -14,7 +14,7 @@ export function AdminLayout() {
 
   const fetchNotifications = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
       const response = await fetch(`${apiUrl}/admin/notifications`);
       const data = await response.json();
 
@@ -59,7 +59,7 @@ export function AdminLayout() {
 
   const markAsRead = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
       await fetch(`${apiUrl}/admin/notifications/read`, { method: "POST" });
       fetchNotifications();
     } catch (err) {
@@ -87,7 +87,7 @@ export function AdminLayout() {
           <nav className="space-y-1.5">
             <NavItem icon={LayoutDashboard} label="Order Management" to="/admin/tracking" active={location.pathname === '/admin/tracking'} />
             <NavItem icon={Package} label="Product Catalog" to="/admin/products" active={location.pathname === '/admin/products'} />
-            <NavItem icon={Users} label="Personnel" to="/admin/personnel" active={location.pathname === '/admin/personnel'} />
+            <NavItem icon={Users} label="Users Control" to="/admin/users" active={location.pathname === '/admin/users'} />
             <NavItem icon={Activity} label="Monitoring" to="/admin/monitoring" active={location.pathname === '/admin/monitoring'} />
             <NavItem icon={Settings} label="System Config" to="/admin/config" active={location.pathname === '/admin/config'} />
           </nav>

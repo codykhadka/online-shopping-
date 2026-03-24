@@ -13,10 +13,10 @@ import { LoginPage } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
 import { Ratings } from "./pages/Ratings";
 import { HowToMake } from "./pages/HowToMake";
-import { MyOrders } from "./pages/MyOrders";
 import { AdminConfig } from "./pages/AdminConfig";
-import { AdminPersonnel } from "./pages/AdminPersonnel";
+import { AdminUsers } from "./pages/AdminUsers";
 import { AdminMonitoring } from "./pages/AdminMonitoring";
+import { Profile } from "./pages/Profile";
 import { useOutletContext } from "react-router";
 import { Product } from "./data/products";
 import { useAuth, AuthProvider } from "./AuthProvider";
@@ -42,14 +42,20 @@ export function useRouterContext() {
   return useOutletContext<RouterContext>();
 }
 
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
 // Global Layout providing Auth to all children
 function GlobalLayout() {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
   return (
-    <AuthProvider>
-      <Outlet />
-      <LoginModal />
-      <Toaster position="top-center" />
-    </AuthProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <AuthProvider>
+        <Outlet />
+        <LoginModal />
+        <Toaster position="top-center" />
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 
@@ -84,7 +90,7 @@ export const router = createBrowserRouter([
     Component: GlobalLayout,
     children: [
       {
-        path: "/login",
+        path: "login",
         Component: LoginPage,
       },
       {
@@ -139,17 +145,17 @@ export const router = createBrowserRouter([
             Component: HowToMake,
           },
           {
-            path: "my-orders",
+            path: "profile",
             Component: () => (
               <Protected>
-                <MyOrders />
+                <Profile />
               </Protected>
             ),
           },
         ],
       },
       {
-        path: "/tracking",
+        path: "tracking",
         Component: TrackingLayout,
         children: [
           {
@@ -163,7 +169,7 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "/admin",
+        path: "admin",
         children: [
           {
             path: "login",
@@ -182,8 +188,8 @@ export const router = createBrowserRouter([
                 Component: AdminProducts,
               },
               {
-                path: "personnel",
-                Component: AdminPersonnel,
+                path: "users",
+                Component: AdminUsers,
               },
               {
                 path: "monitoring",

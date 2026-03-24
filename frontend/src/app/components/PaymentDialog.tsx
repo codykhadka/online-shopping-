@@ -148,6 +148,7 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
       timestamp: new Date().toLocaleString(),
       address: `${formData.address}, ${formData.city}, ${formData.zipCode}`,
       phone: formData.phone,
+      user_id: authUser?.id || null,
     });
 
     const msg = deliveryMethod === "cashOnDelivery"

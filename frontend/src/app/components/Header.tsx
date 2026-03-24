@@ -101,15 +101,17 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
 
           <div className="flex items-center gap-3">
             {isUserAuthenticated ? (
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-300 ${!isTransparent
+              <div className={`flex items-center gap-2 px-1 py-1 rounded-xl border transition-all duration-300 ${!isTransparent
                   ? "bg-green-50 border-green-100"
                   : "bg-white/10 border-white/20 backdrop-blur-md"
                 }`}>
-                <User size={14} className={!isTransparent ? "text-green-600" : "text-green-300"} />
-                <span className={`text-xs font-bold transition-colors duration-300 ${!isTransparent ? "text-green-700" : "text-white"}`}>{user?.name}</span>
+                <Link to="/profile" className={`flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/20 transition-colors ${!isTransparent ? "text-green-700" : "text-white"}`}>
+                  <User size={14} className={!isTransparent ? "text-green-600" : "text-green-300"} />
+                  <span className="text-xs font-bold">{user?.name}</span>
+                </Link>
                 <button
                   onClick={() => { logout(); window.location.reload(); }}
-                  className={`ml-2 p-1 rounded-md transition-colors ${!isTransparent ? "hover:bg-green-100 text-green-600" : "hover:bg-white/20 text-white/70"}`}
+                  className={`p-1.5 rounded-md transition-colors ${!isTransparent ? "hover:bg-green-100 text-green-600" : "hover:bg-white/20 text-white/70"}`}
                   title="Logout"
                 >
                   <LogOut size={14} />
@@ -151,7 +153,7 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
 
             {isUserAuthenticated && (
               <Link
-                to="/my-orders"
+                to="/profile"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-300 ${!isTransparent ? "hover:bg-blue-50 text-blue-700 border border-blue-200 bg-blue-50" : "text-white/80 hover:text-white hover:bg-white/10 border border-white/20"}`}
                 title="Your Orders"
               >

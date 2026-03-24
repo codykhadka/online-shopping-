@@ -1,10 +1,13 @@
 /// <reference types="vite/client" />
 export interface User {
+  id: number;
   name: string;
   username: string;
+  phone: string | null;
+  email: string | null;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const AUTH_KEY = "danphe_organic_auth";
 
 export const getAuthUser = (): User | null => {
@@ -12,12 +15,12 @@ export const getAuthUser = (): User | null => {
   return saved ? JSON.parse(saved) : null;
 };
 
-export const registerUser = async (name: string, username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+export const registerUser = async (name: string, username: string, password: string, phone?: string, email?: string): Promise<{ success: boolean; user?: User; error?: string }> => {
   try {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, username, password }),
+      body: JSON.stringify({ name, username, password, phone, email }),
     });
     const result = await response.json();
     if (result.success) {
@@ -30,7 +33,7 @@ export const registerUser = async (name: string, username: string, password: str
   }
 };
 
-export const loginUser = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+export const loginUser = async (username: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> => {
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",

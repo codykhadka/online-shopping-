@@ -28,11 +28,17 @@ db.exec(`
     password     TEXT    NOT NULL,
     role         TEXT    DEFAULT 'user',
     email        TEXT    UNIQUE,
+    phone        TEXT,
     reset_token  TEXT,
     token_expiry TEXT,
     created_at   TEXT    DEFAULT (datetime('now'))
   )
 `);
+
+if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'phone')) {
+  db.exec("ALTER TABLE users ADD COLUMN phone TEXT");
+}
+
 
 // Seed Admin User
 const adminCount = db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'admin'").get();
@@ -114,10 +120,16 @@ db.exec(`
     timestamp    TEXT    DEFAULT (datetime('now')),
     address      TEXT    NOT NULL,
     phone        TEXT    NOT NULL,
+    user_id      INTEGER DEFAULT NULL,
     assigned_to  INTEGER DEFAULT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id),
     FOREIGN KEY(assigned_to) REFERENCES users(id)
   )
 `);
+
+if (!db.prepare("PRAGMA table_info(orders)").all().some(col => col.name === 'user_id')) {
+  db.exec("ALTER TABLE orders ADD COLUMN user_id INTEGER");
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS notifications (
@@ -174,16 +186,16 @@ app.post('/api/auth/admin/login', (req, res) => {
 
 // ── User Auth Routes ──────────────────────────────────────────────────────────
 app.post('/api/auth/register', (req, res) => {
-  const { name, username, password } = req.body;
+  const { name, username, password, phone, email } = req.body;
   if (!name || !username || !password) return res.status(400).json({ success: false, error: 'Name, username, and password are required.' });
   const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (existing) return res.status(400).json({ success: false, error: 'Username already exists. Please choose another.' });
   const hashedPassword = bcrypt.hashSync(password, 10);
   try {
-    db.prepare('INSERT INTO users (name, username, password) VALUES (?, ?, ?)').run(name, username, hashedPassword);
-    res.json({ success: true, user: { name, username } });
+    const result = db.prepare('INSERT INTO users (name, username, password, phone, email) VALUES (?, ?, ?, ?, ?)').run(name, username, hashedPassword, phone || null, email || null);
+    res.json({ success: true, user: { id: result.lastInsertRowid, name, username, phone, email } });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Could not register user.' });
+    res.status(500).json({ success: false, error: 'Could not register user: ' + err.message });
   }
 });
 
@@ -193,7 +205,49 @@ app.post('/api/auth/login', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
   if (!bcrypt.compareSync(password, user.password)) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
-  res.json({ success: true, user: { name: user.name, username: user.username } });
+  res.json({ success: true, user: { id: user.id, name: user.name, username: user.username, phone: user.phone, email: user.email } });
+});
+
+app.post('/api/auth/social-login', async (req, res) => {
+  const { provider, token, name, email, profilePic } = req.body;
+  if (!provider || !token || !email) {
+    return res.status(400).json({ success: false, error: 'Provider, token, and email are required.' });
+  }
+
+  try {
+    // In a production environment, we would verify the token with the provider here.
+    // E.g., for Google: const ticket = await client.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
+    
+    // Check if user exists
+    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    
+    if (!user) {
+      // Create new user if they don't exist
+      // For social logins, we generate a random username if one isn't provided or based on email
+      const username = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
+      const randomPassword = Math.random().toString(36).substr(2, 10);
+      const hashedPassword = bcrypt.hashSync(randomPassword, 10);
+      
+      const result = db.prepare('INSERT INTO users (name, username, password, email) VALUES (?, ?, ?, ?)')
+        .run(name || 'Social User', username, hashedPassword, email);
+      
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+    }
+    
+    res.json({ 
+      success: true, 
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        username: user.username, 
+        phone: user.phone, 
+        email: user.email 
+      } 
+    });
+  } catch (err) {
+    console.error('Social Login Error:', err);
+    res.status(500).json({ success: false, error: 'Social authentication failed: ' + err.message });
+  }
 });
 
 // ── Account Recovery Protocols ────────────────────────────────────────────────
@@ -319,15 +373,15 @@ app.delete('/api/products/:id', (req, res) => {
 
 // ── Order Routes (SQLite) ──────────────────────────────────────────────────────
 app.post('/api/orders', (req, res) => {
-  const { id, customerName, productName, price, address, phone } = req.body;
+  const { id, customerName, productName, price, address, phone, user_id } = req.body;
   const orderId = id || Math.random().toString(36).substr(2, 9);
   const timestamp = new Date().toISOString();
   
   try {
     db.prepare(`
-      INSERT INTO orders (id, customerName, productName, price, address, phone, timestamp, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, -1)
-    `).run(orderId, customerName, productName, price, address, phone, timestamp);
+      INSERT INTO orders (id, customerName, productName, price, address, phone, timestamp, status, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, -1, ?)
+    `).run(orderId, customerName, productName, price, address, phone, timestamp, user_id || null);
     
     // Create a notification for the admin
     db.prepare(`
@@ -335,9 +389,32 @@ app.post('/api/orders', (req, res) => {
       VALUES (?, ?, ?)
     `).run('New Order Inbound', `Order #ORD-${orderId} received from ${customerName}`, 'order');
     
-    res.json({ success: true, order: { id: orderId, customerName, productName, price, address, phone, timestamp, status: -1 } });
+    res.json({ success: true, order: { id: orderId, customerName, productName, price, address, phone, timestamp, status: -1, user_id } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Could not create order: ' + err.message });
+  }
+});
+
+app.get('/api/users/:userId/orders', (req, res) => {
+  const { userId } = req.params;
+  try {
+    const rows = db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY timestamp DESC').all(userId);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/users', (req, res) => {
+  try {
+    const users = db.prepare('SELECT id, name, username, email, password, phone, role, created_at FROM users').all();
+    const result = users.map(user => {
+      const orders = db.prepare('SELECT * FROM orders WHERE user_id = ?').all(user.id);
+      return { ...user, orders };
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

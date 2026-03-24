@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 /** Base API URL — reads from .env (VITE_API_URL) or falls back to localhost */
-export const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
+export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 /** Generic fetch wrapper with typed responses and consistent error handling */
 export async function apiFetch<T>(

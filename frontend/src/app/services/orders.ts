@@ -9,6 +9,7 @@ export interface Order {
   timestamp: string;
   address: string;
   phone: string;
+  user_id?: number | null;
 }
 
 const LOCAL_KEY = "danphe_organic_orders";

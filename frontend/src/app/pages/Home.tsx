@@ -4,8 +4,10 @@ import { Product } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "../components/ui/button";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { Leaf, Award, Recycle, ChevronDown, Loader2, Send, Search, AlertCircle } from "lucide-react";
+import { Leaf, Award, Recycle, ChevronDown, Loader2, Send, Search, AlertCircle, User as UserIcon, LogOut, ArrowRight, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../AuthProvider";
+import { Link } from "react-router";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
@@ -141,6 +143,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
   const [searchQuery, setSearchQuery] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const { user, logout } = useAuth();
   const { scrollY } = useScroll();
 
   const categories = ["All", ...new Set(products.map(p => p.category))];

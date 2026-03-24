@@ -7,7 +7,8 @@ interface AuthContextType {
   openLoginModal: () => void;
   closeLoginModal: () => void;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (name: string, username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, username: string, password: string, phone?: string, email?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithSocial: (provider: string, token: string, name?: string, email?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -34,13 +35,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return result;
   };
 
-  const register = async (name: string, username: string, password: string) => {
-    const result = await registerUser(name, username, password);
+  const register = async (name: string, username: string, password: string, phone?: string, email?: string) => {
+    const result = await registerUser(name, username, password, phone, email);
     if (result.success) {
       setUser(getAuthUser());
       setIsLoginModalOpen(false);
     }
     return result;
+  };
+
+  const loginWithSocial = async (provider: string, token: string, name?: string, email?: string) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const response = await fetch(`${API_URL}/auth/social-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, token, name, email }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        localStorage.setItem("danphe_organic_auth", JSON.stringify(result.user));
+        setUser(result.user);
+        setIsLoginModalOpen(false);
+        window.dispatchEvent(new Event('auth-change'));
+      }
+      return result;
+    } catch (err) {
+      return { success: false, error: "Social login failed. Please try again." };
+    }
   };
 
   const logout = () => {
@@ -56,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       closeLoginModal: () => setIsLoginModalOpen(false),
       login,
       register,
+      loginWithSocial,
       logout
     }}>
       {children}
