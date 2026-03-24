@@ -4,9 +4,10 @@ import { Header } from "../components/Header";
 import { Cart, CartItem } from "../components/Cart";
 import { Product } from "../data/products";
 import { toast } from "sonner";
-import { Star } from "lucide-react";
 import { WelcomePopup } from "../components/WelcomePopup";
 import { SponsorsStrip } from "../components/SponsorsStrip";
+
+const CART_KEY = "danphe_organic_cart";
 
 export interface SocialData {
   likes: { [key: string]: { count: number; isLiked: boolean } };
@@ -15,9 +16,24 @@ export interface SocialData {
 
 export function Root() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  // Cart — restored from localStorage on first render
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(CART_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
+  }, [cartItems]);
 
   // Initialize state from localStorage
   const [userRatings, setUserRatings] = useState<{ [key: string]: number }>(() => {
@@ -40,10 +56,22 @@ export function Root() {
 
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
+    setIsLoading(true);
+    setError(null);
     fetch(`${apiUrl}/products`)
-      .then(res => res.json())
-      .then(data => setProducts(data))
-      .catch(console.error);
+      .then(res => {
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        setProducts(data);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError("Could not connect to the server. Please make sure the backend is running.");
+        setIsLoading(false);
+      });
   }, []);
 
 
@@ -130,6 +158,8 @@ export function Root() {
       <main>
         <Outlet context={{ 
           products,
+          isLoading,
+          error,
           onAddToCart: handleAddToCart,
           userRatings,
           handleRate,

@@ -34,6 +34,8 @@ interface RouterContext {
   handleToggleLike: (productId: string) => void;
   handleAddComment: (productId: string, text: string, isMotivational?: boolean) => void;
   products: Product[];
+  isLoading: boolean;
+  error: string | null;
 }
 
 export function useRouterContext() {
@@ -56,7 +58,7 @@ function Protected({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     if (!user) {
       navigate("/login", { state: { from: location }, replace: true });
@@ -92,8 +94,8 @@ export const router = createBrowserRouter([
           {
             index: true,
             Component: () => {
-              const { onAddToCart, userRatings, handleRate, products } = useRouterContext();
-              return <Home onAddToCart={onAddToCart} userRatings={userRatings} onRate={handleRate} products={products} />;
+              const { onAddToCart, userRatings, handleRate, products, isLoading, error } = useRouterContext();
+              return <Home onAddToCart={onAddToCart} userRatings={userRatings} onRate={handleRate} products={products} isLoading={isLoading} error={error} />;
             },
           },
           {
@@ -110,18 +112,18 @@ export const router = createBrowserRouter([
           {
             path: "ratings",
             Component: () => {
-              const { 
-                onAddToCart, 
-                userRatings, 
-                handleRate, 
-                socialData, 
-                handleToggleLike, 
+              const {
+                onAddToCart,
+                userRatings,
+                handleRate,
+                socialData,
+                handleToggleLike,
                 handleAddComment,
                 products
               } = useRouterContext();
               return (
-                <Ratings 
-                  onAddToCart={onAddToCart} 
+                <Ratings
+                  onAddToCart={onAddToCart}
                   userRatings={userRatings}
                   onRate={handleRate}
                   socialData={socialData}

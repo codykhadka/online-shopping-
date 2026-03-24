@@ -168,7 +168,7 @@ export function Ratings({
                   </div>
 
                   {/* Comments Display */}
-                  {/* <div className="flex-1 mb-4 overflow-y-auto max-h-36 custom-scrollbar">
+                  <div className="flex-1 mb-4 overflow-y-auto max-h-36 custom-scrollbar">
                     <p className="text-[10px] uppercase font-black text-neutral-500 tracking-widest mb-2">Community Comments</p>
                     <div className="space-y-1.5">
                       <AnimatePresence initial={false}>
@@ -180,11 +180,10 @@ export function Ratings({
                               key={i}
                               initial={{ opacity: 0, x: -5 }}
                               animate={{ opacity: 1, x: 0 }}
-                              className={`p-2 rounded-xl border ${
-                                c.isMotivational 
-                                  ? "bg-amber-50 border-amber-100 text-amber-900 shadow-sm" 
+                              className={`p-2 rounded-xl border ${c.isMotivational
+                                  ? "bg-amber-50 border-amber-100 text-amber-900 shadow-sm"
                                   : "bg-white border-neutral-100 text-neutral-700 shadow-sm"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-start gap-2">
                                 {c.isMotivational && <Quote className="size-3 mt-0.5 shrink-0 text-amber-500" />}
@@ -197,7 +196,7 @@ export function Ratings({
                         )}
                       </AnimatePresence>
                     </div>
-                  </div> */}
+                  </div>
 
                   {/* Comment Input */}
                   <div className="mt-auto pt-2 border-t border-neutral-100">

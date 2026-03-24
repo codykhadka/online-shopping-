@@ -17,11 +17,11 @@ export function AdminLayout() {
       const apiUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
       const response = await fetch(`${apiUrl}/admin/notifications`);
       const data = await response.json();
-      
+
       if (data.length > notifications.length && notifications.length > 0) {
         const newOnes = data.filter((n: any) => !notifications.find(prev => prev.id === n.id));
         newOnes.forEach((n: any) => {
-          toast.success(n.title, { 
+          toast.success(n.title, {
             description: n.message,
             action: {
               label: "View",
@@ -83,7 +83,7 @@ export function AdminLayout() {
               <span className="text-[10px] font-bold text-blue-500 tracking-[0.2em] mt-1">CENTER v2.0</span>
             </div>
           </Link>
-          
+
           <nav className="space-y-1.5">
             <NavItem icon={LayoutDashboard} label="Order Management" to="/admin/tracking" active={location.pathname === '/admin/tracking'} />
             <NavItem icon={Package} label="Product Catalog" to="/admin/products" active={location.pathname === '/admin/products'} />
@@ -92,13 +92,13 @@ export function AdminLayout() {
             <NavItem icon={Settings} label="System Config" to="/admin/config" active={location.pathname === '/admin/config'} />
           </nav>
         </div>
-        
+
         <div className="mt-auto p-4 border-t border-zinc-800 bg-zinc-900/30">
           <div className="mb-3 px-3 py-2 bg-zinc-900 rounded-xl">
             <p className="text-xs font-black text-zinc-100">{admin?.username || 'Admin'}</p>
             <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">● Authorized</p>
           </div>
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-all duration-200 group"
           >
@@ -115,17 +115,17 @@ export function AdminLayout() {
           <div className="flex items-center gap-4 flex-1 max-w-xl">
             <div className="relative w-full group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-blue-500 transition-colors" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search telemetry data..." 
+              <input
+                type="text"
+                placeholder="Search telemetry data..."
                 className="w-full pl-10 pr-4 py-2 bg-zinc-900/50 border border-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 rounded-xl text-sm transition-all outline-none text-zinc-200 placeholder:text-zinc-600"
               />
             </div>
           </div>
-          
+
           <div className="flex items-center gap-6 pl-4">
             <div className="relative" ref={notificationRef}>
-              <button 
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="text-zinc-500 hover:text-zinc-200 transition-colors relative p-2 hover:bg-zinc-800 rounded-lg group"
               >
@@ -149,8 +149,8 @@ export function AdminLayout() {
                       </div>
                     ) : (
                       notifications.map(n => (
-                        <div 
-                          key={n.id} 
+                        <div
+                          key={n.id}
                           onClick={() => {
                             setShowNotifications(false);
                             navigate("/admin/tracking");
@@ -184,9 +184,9 @@ export function AdminLayout() {
                 </div>
               )}
             </div>
-            
+
             <div className="h-6 w-px bg-zinc-800"></div>
-            
+
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-zinc-100 leading-tight">Root Admin</p>
@@ -215,7 +215,7 @@ export function AdminLayout() {
             <span className="w-1 h-1 bg-zinc-800 rounded-full"></span>
             <span>Region: Global-Alpha</span>
           </div>
-          
+
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Outlet />
           </div>
@@ -227,11 +227,10 @@ export function AdminLayout() {
 
 function NavItem({ icon: Icon, label, to, active = false }: { icon: any, label: string, to: string, active?: boolean }) {
   return (
-    <Link to={to} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-      active 
-        ? "bg-blue-600/10 text-blue-500 border border-blue-500/20 font-bold" 
+    <Link to={to} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${active
+        ? "bg-blue-600/10 text-blue-500 border border-blue-500/20 font-bold"
         : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
-    }`}>
+      }`}>
       <Icon size={18} className={active ? "text-blue-500" : "text-zinc-500"} />
       <span className="text-sm">{label}</span>
       {active && <div className="ml-auto size-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>}

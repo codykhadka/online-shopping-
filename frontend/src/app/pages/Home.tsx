@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Product } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "../components/ui/button";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { Leaf, Award, Recycle, ChevronDown, CheckCircle2, Loader2, Send } from "lucide-react";
+import { Leaf, Award, Recycle, ChevronDown, Loader2, Send, Search, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
@@ -14,6 +14,8 @@ interface HomeProps {
   userRatings: { [key: string]: number };
   onRate: (productId: string, rating: number) => void;
   products: Product[];
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 // Typing animation variants
@@ -68,6 +70,54 @@ const cardVariant = {
   }
 };
 
+// Counter Component
+function CounterDisplay({ end, duration = 2.5 }: { end: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasStarted) {
+          setHasStarted(true);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasStarted]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    let startTime: number;
+    let animationFrameId: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const progress = (timestamp - startTime) / (duration * 1000);
+
+      if (progress < 1) {
+        setCount(Math.floor(progress * end));
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        setCount(end);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [hasStarted, end, duration]);
+
+  return <span ref={ref}>{count.toLocaleString()}+</span>;
+}
+
 const features = [
   {
     icon: <Award size={28} strokeWidth={1.5} />,
@@ -86,8 +136,9 @@ const features = [
   }
 ];
 
-export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) {
+export function Home({ onAddToCart, userRatings, onRate, products, isLoading = false, error = null }: HomeProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
   const { scrollY } = useScroll();
@@ -98,9 +149,17 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
   const heroOpacity = useTransform(scrollY, [0, 450], [1, 0]);
   const heroScale = useTransform(scrollY, [0, 450], [1, 0.95]);
 
-  const filteredProducts = selectedCategory === "All"
-    ? products
-    : products.filter(p => p.category === selectedCategory);
+  const filteredProducts = products
+    .filter(p => selectedCategory === "All" || p.category === selectedCategory)
+    .filter(p => {
+      const q = searchQuery.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q)
+      );
+    });
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +228,7 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
             />
             <motion.div
               animate={{ opacity: [0.15, 0.3, 0.15], scale: [1, 1.2, 1], x: [0, -30, 0] }}
-              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              transition={{ duration: 28, repeat: Infinity, ease: "easeInOut", delay: 2 }}
               className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-green-300/20 rounded-full blur-[100px] mix-blend-overlay z-10 pointer-events-none"
             />
 
@@ -182,7 +241,7 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
         </motion.div>
 
         {/* Watermark */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 3, delay: 1 }}
@@ -190,9 +249,9 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
         >
           <p className="text-[9vw] font-black tracking-tighter text-yellow-400/15 select-none leading-none uppercase">
             Danphe
-             Organic
+            Organic
           </p>
-        </motion.div>
+        </motion.div> */}
 
         {/* Hero Content */}
         <motion.div
@@ -323,18 +382,18 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.8 }}
                 >
-                  5,000+
+                  <CounterDisplay end={5000} duration={2.5} />
                 </motion.p>
                 <p className="text-[11px] text-white/60 font-bold uppercase tracking-widest mt-0.5">Happy Customers</p>
               </div>
             </div>
-            <div className="mt-3 flex gap-1">
+            <div className="mt-3 flex gap-4">
               {[...Array(5)].map((_, i) => (
                 <motion.div
                   key={i}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 2 + i * 0.1, type: "spring" }}
+                  transition={{ delay: 2 + i * 1.1, type: "spring" }}
                   className="text-yellow-400 text-sm"
                 >⭐</motion.div>
               ))}
@@ -430,6 +489,31 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
               className="w-24 h-1 bg-green-500 rounded-full mb-10 origin-left"
             />
 
+            {/* Search Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="relative w-full max-w-md mx-auto mb-8"
+            >
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products…"
+                className="w-full pl-11 pr-4 py-3 rounded-full border border-neutral-200 bg-white shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-xs font-medium"
+                >
+                  ✕
+                </button>
+              )}
+            </motion.div>
+
             {/* Category Pills */}
             <div className="flex gap-2.5 overflow-x-auto pb-2 w-full justify-start md:justify-center no-scrollbar px-2">
               {categories.map((category) => (
@@ -457,9 +541,26 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
           </motion.div>
 
           {/* Products Grid */}
-          {products.length === 0 ? (
-            <div className="flex justify-center items-center py-24 text-green-600">
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4 text-green-600">
               <Loader2 className="animate-spin" size={48} />
+              <p className="text-neutral-500 text-sm font-medium">Loading products…</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                <AlertCircle size={32} className="text-red-400" />
+              </div>
+              <p className="text-neutral-600 font-semibold text-lg">Connection Error</p>
+              <p className="text-neutral-400 text-sm text-center max-w-xs">{error}</p>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+                className="mt-2 border-red-200 text-red-500 hover:bg-red-50"
+              >
+                Try Again
+              </Button>
             </div>
           ) : (
             <>
@@ -484,9 +585,9 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
                         layout
                       >
                         <div className="w-full">
-                          <ProductCard 
-                            product={product} 
-                            onAddToCart={onAddToCart} 
+                          <ProductCard
+                            product={product}
+                            onAddToCart={onAddToCart}
                             userRating={userRatings[product.id]}
                             onRate={(r) => onRate(product.id, r)}
                           />
@@ -556,7 +657,7 @@ export function Home({ onAddToCart, userRatings, onRate, products }: HomeProps) 
                 disabled={isSubscribing}
                 className="px-6 py-4 bg-white/[0.08] border border-green-400/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:bg-white/[0.12] text-white placeholder-green-100/50 flex-1 transition-all shadow-sm backdrop-blur-md disabled:opacity-50"
               />
-              <Button 
+              <Button
                 type="submit"
                 disabled={isSubscribing}
                 className="bg-green-500 hover:bg-green-400 text-green-950 rounded-xl px-8 py-6 font-extrabold shadow-lg shadow-green-500/20 shrink-0 transition-transform hover:scale-105 disabled:hover:scale-100"
