@@ -1,13 +1,14 @@
 import { Link } from "react-router";
 import { Button } from "../components/ui/button";
+import "@/styles/NotFound.css";
 
 export function NotFound() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="text-center">
-        <h1 className="text-6xl mb-4">404</h1>
-        <h2 className="text-2xl mb-4">Page Not Found</h2>
-        <p className="text-gray-600 mb-6">
+    <div className="not-found-container">
+      <div className="not-found-content">
+        <h1 className="not-found-title">404</h1>
+        <h2 className="not-found-subtitle">Page Not Found</h2>
+        <p className="not-found-text">
           The page you're looking for doesn't exist or has been moved.
         </p>
         <Link to="/login">

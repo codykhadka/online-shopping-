@@ -5,6 +5,8 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "motion/
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../AuthProvider";
 import { Product } from "../data/products";
+import "@/styles/ui styles/Header.css";
+
 
 interface HeaderProps {
   cartItemCount: number;
@@ -79,39 +81,33 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className={`fixed top-0 z-50 w-full transition-all duration-500 ${isTransparent
-            ? "bg-transparent border-b border-white/0"
-            : "bg-white/90 backdrop-blur-xl shadow-md shadow-neutral-200/50 border-b border-neutral-100"
-          }`}
+        className={`header ${isTransparent ? "transparent" : ""}`}
       >
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2 group">
+        <div className="header-content">
+          <Link to="/" className="logo-link">
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-              className="size-8 rounded-lg bg-green-600 flex items-center justify-center transition-transform group-hover:scale-110 shadow-md"
+              className="logo-icon-wrapper"
             >
-              <span className="text-white font-bold text-sm tracking-wide">D</span>
+              <span className="logo-icon-text">D</span>
             </motion.div>
-            <span className={`text-xl font-black tracking-tight transition-colors duration-300 ${!isTransparent ? "text-neutral-900" : "text-white"}`}>
-              <span className="text-red-500 logo-letter">D</span><span className="text-blue-500 logo-letter">a</span><span className="text-green-500 logo-letter">n</span><span className="text-purple-500 logo-letter">p</span><span className="text-pink-500 logo-letter">h</span><span className="text-orange-500 logo-letter">e</span>  <span className="text-yellow-300 logo-letter">{typedOrganic}</span>
+            <span className="logo-text">
+              <span className="logo-letter-d">D</span><span className="logo-letter-a">a</span><span className="logo-letter-n">n</span><span className="logo-letter-p">p</span><span className="logo-letter-h">h</span><span className="logo-letter-e">e</span>  <span className="logo-letter-organic">{typedOrganic}</span>
             </span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="header-nav">
             {isUserAuthenticated ? (
-              <div className={`flex items-center gap-2 px-1 py-1 rounded-xl border transition-all duration-300 ${!isTransparent
-                  ? "bg-green-50 border-green-100"
-                  : "bg-white/10 border-white/20 backdrop-blur-md"
-                }`}>
-                <Link to="/profile" className={`flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/20 transition-colors ${!isTransparent ? "text-green-700" : "text-white"}`}>
-                  <User size={14} className={!isTransparent ? "text-green-600" : "text-green-300"} />
-                  <span className="text-xs font-bold">{user?.name}</span>
+              <div className="user-auth-block">
+                <Link to="/profile" className="user-profile-link">
+                  <User size={14} className="user-profile-icon" />
+                  <span className="user-name">{user?.name}</span>
                 </Link>
                 <button
                   onClick={() => { logout(); window.location.reload(); }}
-                  className={`p-1.5 rounded-md transition-colors ${!isTransparent ? "hover:bg-green-100 text-green-600" : "hover:bg-white/20 text-white/70"}`}
+                  className="logout-button"
                   title="Logout"
                 >
                   <LogOut size={14} />
@@ -120,44 +116,46 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
             ) : (
               <button
                 onClick={() => navigate("/login")}
-                className={`text-xs font-bold transition-colors duration-300 ${!isTransparent ? "text-slate-500 hover:text-green-600" : "text-white/80 hover:text-white"}`}
+                className="signin-button"
               >
                 Sign In
               </button>
             )}
 
-            <Link
-              to="/admin/tracking"
-              className={`p-2 rounded-lg transition-colors duration-300 ${!isTransparent ? "hover:bg-gray-100 text-slate-500 hover:text-slate-900" : "text-white/70 hover:text-white hover:bg-white/10"}`}
-              title="Admin Panel"
-            >
-              <Shield className="size-5" />
-            </Link>
+            {user?.username === 'Cody' && (
+              <Link
+                to="/admin/tracking"
+                className="nav-icon-button"
+                title="Admin Panel"
+              >
+                <Shield className="nav-icon" />
+              </Link>
+            )}
 
             <Link
               to="/ratings"
-              className={`p-2 rounded-lg transition-colors duration-300 ${!isTransparent ? "hover:bg-gray-100 text-slate-500 hover:text-slate-900" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+              className="nav-icon-button"
               title="Product Ratings"
             >
-              <Star className="size-5" />
+              <Star className="nav-icon" />
             </Link>
 
             <Link
               to="/how-to-make"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-300 ${!isTransparent ? "hover:bg-green-50 text-green-700 border border-green-200 bg-green-50" : "text-white/80 hover:text-white hover:bg-white/10 border border-white/20"}`}
+              className="nav-text-button nav-text-button--green"
               title="How-To Guides"
             >
-              <BookOpen className="size-4" />
+              <BookOpen className="nav-text-icon" />
               How-To
             </Link>
 
             {isUserAuthenticated && (
               <Link
                 to="/profile"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors duration-300 ${!isTransparent ? "hover:bg-blue-50 text-blue-700 border border-blue-200 bg-blue-50" : "text-white/80 hover:text-white hover:bg-white/10 border border-white/20"}`}
+                className="nav-text-button nav-text-button--blue"
                 title="Your Orders"
               >
-                <Package className="size-4" />
+                <Package className="nav-text-icon" />
                 Your Orders
               </Link>
             )}
@@ -165,19 +163,19 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
             {/* Search Button */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className={`p-2 rounded-lg transition-colors duration-300 ${!isTransparent ? "hover:bg-gray-100 text-slate-600" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+              className="nav-icon-button"
               title="Search Products"
             >
-              <Search className="size-5" />
+              <Search className="nav-icon" />
             </button>
 
             <button
               onClick={onCartClick}
-              className={`relative p-2 rounded-lg transition-colors duration-300 ${!isTransparent ? "hover:bg-gray-100 text-slate-600" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+              className="nav-icon-button cart-button"
             >
-              <ShoppingCart className="size-5" />
+              <ShoppingCart className="nav-icon" />
               {cartItemCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 size-5 flex items-center justify-center p-0 text-xs">
+                <Badge className="cart-badge">
                   {cartItemCount}
                 </Badge>
               )}
@@ -194,11 +192,11 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] flex flex-col"
+            className="search-overlay"
           >
             {/* Backdrop */}
             <div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="search-backdrop"
               onClick={() => setIsSearchOpen(false)}
             />
 
@@ -208,22 +206,22 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -20, opacity: 0 }}
               transition={{ type: "spring", stiffness: 200, damping: 22 }}
-              className="relative z-10 bg-white shadow-2xl max-w-2xl w-full mx-auto mt-20 rounded-2xl overflow-hidden border border-neutral-100"
+              className="search-panel"
             >
               {/* Input Row */}
-              <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100">
-                <Search size={20} className="text-neutral-400 shrink-0" />
+              <div className="search-input-row">
+                <Search size={20} className="search-panel-icon" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   placeholder="Search products, categories…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 text-base text-neutral-800 placeholder-neutral-400 outline-none bg-transparent font-medium"
+                  className="search-panel-input"
                 />
                 <button
                   onClick={() => setIsSearchOpen(false)}
-                  className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-400 transition-colors"
+                  className="search-panel-close"
                 >
                   <X size={18} />
                 </button>
@@ -237,7 +235,7 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="px-5 py-8 text-center text-neutral-400 text-sm font-medium"
+                    className="search-results-info"
                   >
                     Start typing to search products…
                   </motion.div>
@@ -247,9 +245,9 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="px-5 py-8 text-center text-neutral-400 text-sm font-medium"
+                    className="search-results-info"
                   >
-                    No products found for "<span className="text-neutral-700 font-bold">{searchQuery}</span>"
+                    No products found for "<span className="search-results-query">{searchQuery}</span>"
                   </motion.div>
                 ) : (
                   <motion.div
@@ -257,7 +255,7 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="py-2 max-h-[420px] overflow-y-auto"
+                    className="search-results-list"
                   >
                     {searchResults.map((product, i) => (
                       <motion.button
@@ -266,29 +264,29 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
                         onClick={() => handleProductClick(product.id)}
-                        className="w-full flex items-center gap-4 px-5 py-3 hover:bg-green-50 transition-colors group text-left"
+                        className="search-result-item"
                       >
                         <img
                           src={product.image}
                           alt={product.name}
-                          className="size-12 rounded-xl object-cover shrink-0 border border-neutral-100"
+                          className="search-result-image"
                         />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-neutral-900 text-sm truncate">{product.name}</p>
-                          <p className="text-xs text-green-600 font-semibold">{product.category}</p>
+                        <div className="search-result-text">
+                          <p className="search-result-name">{product.name}</p>
+                          <p className="search-result-category">{product.category}</p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <div className="flex flex-col text-right">
+                        <div className="search-result-price-container">
+                          <div className="search-result-price">
                             {product.discountPrice ? (
                               <>
-                                <span className="font-black text-green-600 leading-none">${product.discountPrice}</span>
-                                <span className="text-[10px] text-neutral-400 line-through">${product.price}</span>
+                                <span className="search-result-discount-price">${product.discountPrice}</span>
+                                <span className="search-result-original-price">${product.price}</span>
                               </>
                             ) : (
-                              <span className="font-black text-neutral-800">${product.price}</span>
+                              <span className="search-result-regular-price">${product.price}</span>
                             )}
                           </div>
-                          <ArrowRight size={15} className="text-neutral-300 group-hover:text-green-500 transition-colors" />
+                          <ArrowRight size={15} className="search-result-arrow" />
                         </div>
                       </motion.button>
                     ))}

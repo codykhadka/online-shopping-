@@ -9,8 +9,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Admin credentials — change these in your .env file
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'Cody';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '1234';
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -75,7 +75,7 @@ try {
   if (!tableInfo.some(col => col.name === 'discountPrice')) {
     db.exec("ALTER TABLE products ADD COLUMN discountPrice REAL");
   }
-} catch(e) {
+} catch (e) {
   console.error("Could not add discountPrice column", e);
 }
 
@@ -88,14 +88,14 @@ if (count.c === 0) {
   `);
   const seed = db.transaction((items) => { items.forEach(p => insert.run(...p)); });
   seed([
-    ["Pure Raw Honey",          "100% natural and unprocessed raw honey harvested directly from wild forest bees.", 15.99, null, "Honey",          "/images/honey_jar.png",    4.9, 1, JSON.stringify(["No added sugar","Rich in antioxidants","Sustainably sourced"])],
-    ["A2 Cow Ghee",             "Traditional bilona churned A2 cow ghee packed with rich aroma and nutritional benefits.", 24.99, 19.99, "Ghee & Oils", "/images/cow_ghee.png",     5.0, 1, JSON.stringify(["Made from A2 cow milk","Traditional bilona method","Rich in Omega-3"])],
-    ["Organic Jaggery Powder",  "Chemical-free jaggery powder, a perfect healthy alternative to refined white sugar.", 8.99,  null, "Jaggery",       "/images/jaggery_cubes.png",4.8, 1, JSON.stringify(["No artificial colors","Rich in iron","Unrefined"])],
-    ["Cold Pressed Mustard Oil","100% pure cold-pressed mustard oil retaining its natural pungency and health benefits.", 12.49, null, "Ghee & Oils",  "/images/mustard_oil.png",  4.6, 1, JSON.stringify(["Cold-pressed extraction","High smoking point","Cholesterol free"])],
-    ["Unsweetened Peanut Butter","Crunchy, all-natural peanut butter made from 100% roasted peanuts with zero additives.", 10.99, null, "Peanut Butter","/images/peanut_butter.png",4.7, 1, JSON.stringify(["100% Roasted Peanuts","No added oil","High protein content"])],
-    ["Wild Forest Honey",       "Dark, robust honey collected from deep forest flora with high medicinal value.", 18.99, 15.00, "Honey",          "/images/honey_jar.png",    4.9, 0, JSON.stringify(["Immunity booster","Unpasteurized","Direct from forest tribes"])],
-    ["Virgin Coconut Oil",      "Cold-pressed virgin coconut oil, excellent for cooking, baking, and skin care.", 16.50, null, "Ghee & Oils",   "/images/cow_ghee.png",     4.8, 1, JSON.stringify(["Extra virgin","Multi-purpose usage","Non-refined"])],
-    ["Jaggery Cubes",           "Convenient, bite-sized jaggery cubes made from naturally grown sugarcane.", 9.99,  null, "Jaggery",         "/images/jaggery_cubes.png",4.5, 1, JSON.stringify(["Easy to use cubes","Healthy sweetener","Farm fresh sugarcane"])],
+    ["Pure Raw Honey", "100% natural and unprocessed raw honey harvested directly from wild forest bees.", 15.99, null, "Honey", "/images/honey_jar.png", 4.9, 1, JSON.stringify(["No added sugar", "Rich in antioxidants", "Sustainably sourced"])],
+    ["A2 Cow Ghee", "Traditional bilona churned A2 cow ghee packed with rich aroma and nutritional benefits.", 24.99, 19.99, "Ghee & Oils", "/images/cow_ghee.png", 5.0, 1, JSON.stringify(["Made from A2 cow milk", "Traditional bilona method", "Rich in Omega-3"])],
+    ["Organic Jaggery Powder", "Chemical-free jaggery powder, a perfect healthy alternative to refined white sugar.", 8.99, null, "Jaggery", "/images/jaggery_cubes.png", 4.8, 1, JSON.stringify(["No artificial colors", "Rich in iron", "Unrefined"])],
+    ["Cold Pressed Mustard Oil", "100% pure cold-pressed mustard oil retaining its natural pungency and health benefits.", 12.49, null, "Ghee & Oils", "/images/mustard_oil.png", 4.6, 1, JSON.stringify(["Cold-pressed extraction", "High smoking point", "Cholesterol free"])],
+    ["Unsweetened Peanut Butter", "Crunchy, all-natural peanut butter made from 100% roasted peanuts with zero additives.", 10.99, null, "Peanut Butter", "/images/peanut_butter.png", 4.7, 1, JSON.stringify(["100% Roasted Peanuts", "No added oil", "High protein content"])],
+    ["Wild Forest Honey", "Dark, robust honey collected from deep forest flora with high medicinal value.", 18.99, 15.00, "Honey", "/images/honey_jar.png", 4.9, 0, JSON.stringify(["Immunity booster", "Unpasteurized", "Direct from forest tribes"])],
+    ["Virgin Coconut Oil", "Cold-pressed virgin coconut oil, excellent for cooking, baking, and skin care.", 16.50, null, "Ghee & Oils", "/images/cow_ghee.png", 4.8, 1, JSON.stringify(["Extra virgin", "Multi-purpose usage", "Non-refined"])],
+    ["Jaggery Cubes", "Convenient, bite-sized jaggery cubes made from naturally grown sugarcane.", 9.99, null, "Jaggery", "/images/jaggery_cubes.png", 4.5, 1, JSON.stringify(["Easy to use cubes", "Healthy sweetener", "Farm fresh sugarcane"])],
   ]);
 }
 
@@ -180,7 +180,7 @@ app.post('/api/auth/admin/login', (req, res) => {
   try {
     const { username, password } = req.body;
     const user = db.prepare("SELECT * FROM users WHERE username = ? AND role = 'admin'").get(username);
-    
+
     if (user && bcrypt.compareSync(password, user.password)) {
       return res.json({ success: true, admin: { username: user.username, name: user.name, role: 'admin' } });
     }
@@ -223,32 +223,32 @@ app.post('/api/auth/social-login', async (req, res) => {
   try {
     // In a production environment, we would verify the token with the provider here.
     // E.g., for Google: const ticket = await client.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
-    
+
     // Check if user exists
     let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    
+
     if (!user) {
       // Create new user if they don't exist
       // For social logins, we generate a random username if one isn't provided or based on email
       const username = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
       const randomPassword = Math.random().toString(36).substr(2, 10);
       const hashedPassword = bcrypt.hashSync(randomPassword, 10);
-      
+
       const result = db.prepare('INSERT INTO users (name, username, password, email) VALUES (?, ?, ?, ?)')
         .run(name || 'Social User', username, hashedPassword, email);
-      
+
       user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
     }
-    
-    res.json({ 
-      success: true, 
-      user: { 
-        id: user.id, 
-        name: user.name, 
-        username: user.username, 
-        phone: user.phone, 
-        email: user.email 
-      } 
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        phone: user.phone,
+        email: user.email
+      }
     });
   } catch (err) {
     console.error('Social Login Error:', err);
@@ -268,11 +268,11 @@ app.post('/api/auth/forgot-password', (req, res) => {
     const expiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
 
     db.prepare('UPDATE users SET reset_token = ?, token_expiry = ? WHERE id = ?').run(token, expiry, user.id);
-    
+
     // IMPORTANT: In a real app, this would be sent via email.
     // For this demonstration, we log it to the console for the user to retrieve.
     console.log(`\n[SECURITY PROTOCOL] Recovery Token for @${username}: ${token}\n`);
-    
+
     res.json({ success: true, message: 'Recovery token dispatched.' });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Protocol initiation failed.' });
@@ -287,7 +287,7 @@ app.post('/api/auth/reset-password', (req, res) => {
 
     const hashedPassword = bcrypt.hashSync(newPassword, 10);
     db.prepare('UPDATE users SET password = ?, reset_token = NULL, token_expiry = NULL WHERE id = ?').run(hashedPassword, user.id);
-    
+
     res.json({ success: true, message: 'Identity restored successfully.' });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Identity restoration failed.' });
@@ -310,7 +310,7 @@ app.post('/api/subscribe', (req, res) => {
     // Insert notification for admin/owner
     db.prepare('INSERT INTO notifications (title, message, type) VALUES (?, ?, ?)')
       .run('New Newsletter Subscriber', `Identity ${email} has joined the movement.`, 'info');
-    
+
     // Subscriber-side Mock Notification (Owner can see this in the logs)
     console.log(`\n\x1b[36m(MOCK EMAIL) [TO: ${email}]`);
     console.log(`SUBJECT: Welcome to the Danphe Organic Movement!`);
@@ -320,7 +320,7 @@ app.post('/api/subscribe', (req, res) => {
     console.log(`\x1b[33m(MOCK EMAIL) [TO: OWNER@DANPHE.ORG]`);
     console.log(`SUBJECT: New Subscriber Alert!`);
     console.log(`BODY: A new identity (${email}) has joined the movement via the footer protocol.\x1b[0m\n`);
-    
+
     console.log(`\x1b[32m[NEWSLETTER] New subscriber registered: ${email}\x1b[0m`);
     res.json({ success: true, message: 'Welcome to the movement!' });
   } catch (err) {
@@ -351,14 +351,14 @@ app.put('/api/products/:id', (req, res) => {
   if (!existing) return res.status(404).json({ success: false, error: 'Product not found.' });
   const { name, description, price, discountPrice, category, image, features, inStock } = req.body;
   const updated = {
-    name:        name        !== undefined ? name        : existing.name,
+    name: name !== undefined ? name : existing.name,
     description: description !== undefined ? description : existing.description,
-    price:       price       !== undefined ? parseFloat(price) : existing.price,
+    price: price !== undefined ? parseFloat(price) : existing.price,
     discountPrice: discountPrice !== undefined ? (discountPrice ? parseFloat(discountPrice) : null) : existing.discountPrice,
-    category:    category    !== undefined ? category    : existing.category,
-    image:       image       !== undefined ? image       : existing.image,
-    inStock:     inStock     !== undefined ? (inStock ? 1 : 0) : existing.inStock,
-    features:    features    !== undefined
+    category: category !== undefined ? category : existing.category,
+    image: image !== undefined ? image : existing.image,
+    inStock: inStock !== undefined ? (inStock ? 1 : 0) : existing.inStock,
+    features: features !== undefined
       ? JSON.stringify(Array.isArray(features) ? features : features.split(',').map(f => f.trim()).filter(Boolean))
       : existing.features,
   };
@@ -382,19 +382,19 @@ app.post('/api/orders', (req, res) => {
   const { id, customerName, productName, price, address, phone, user_id } = req.body;
   const orderId = id || Math.random().toString(36).substr(2, 9);
   const timestamp = new Date().toISOString();
-  
+
   try {
     db.prepare(`
       INSERT INTO orders (id, customerName, productName, price, address, phone, timestamp, status, user_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, -1, ?)
     `).run(orderId, customerName, productName, price, address, phone, timestamp, user_id || null);
-    
+
     // Create a notification for the admin
     db.prepare(`
       INSERT INTO notifications (title, message, type)
       VALUES (?, ?, ?)
     `).run('New Order Inbound', `Order #ORD-${orderId} received from ${customerName}`, 'order');
-    
+
     res.json({ success: true, order: { id: orderId, customerName, productName, price, address, phone, timestamp, status: -1, user_id } });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Could not create order: ' + err.message });
@@ -424,7 +424,7 @@ app.get('/api/admin/users', (req, res) => {
   }
 });
 
-app.get('/api/orders', (req, res) => { 
+app.get('/api/orders', (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM orders ORDER BY timestamp DESC').all();
     res.json(rows);
@@ -436,11 +436,11 @@ app.get('/api/orders', (req, res) => {
 app.patch('/api/orders/:id/status', (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
-  
+
   try {
     const result = db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, id);
     if (result.changes === 0) return res.status(404).json({ success: false, error: 'Order not found.' });
-    
+
     // Notification for status change
     const statusLabels = ["Confirmed", "Prepared", "Shipping", "Completed"];
     const label = status >= 0 && status < statusLabels.length ? statusLabels[status] : "Updated";

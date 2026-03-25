@@ -20,5 +20,6 @@ export function clearAdminSession() {
 }
 
 export function isAdminLoggedIn(): boolean {
-  return !!getAdminSession();
+  const session = getAdminSession();
+  return session !== null && session.username === 'Cody';
 }

@@ -228,8 +228,8 @@ export function AdminLayout() {
 function NavItem({ icon: Icon, label, to, active = false }: { icon: any, label: string, to: string, active?: boolean }) {
   return (
     <Link to={to} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${active
-        ? "bg-blue-600/10 text-blue-500 border border-blue-500/20 font-bold"
-        : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
+      ? "bg-blue-600/10 text-blue-500 border border-blue-500/20 font-bold"
+      : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50"
       }`}>
       <Icon size={18} className={active ? "text-blue-500" : "text-zinc-500"} />
       <span className="text-sm">{label}</span>

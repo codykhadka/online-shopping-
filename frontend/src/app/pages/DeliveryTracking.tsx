@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { LiveMap } from "../components/LiveMap";
+import "@/styles/DeliveryTracking.css";
 
 const STEPS = [
   { id: 1, label: "Order Confirmed", icon: CheckCircle, description: "Your order has been confirmed and is being processed." },
@@ -45,61 +46,61 @@ export function DeliveryTracking() {
   }, [orderId]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="tracking-page">
       {/* Pending Banner */}
       {currentStep === 0 && (
-        <div className="bg-amber-50 border border-amber-200 p-6 rounded-3xl flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="size-12 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200">
-              <Clock className="text-white animate-pulse" size={24} />
+        <div className="pending-banner">
+          <div className="banner-content">
+            <div className="banner-icon-box">
+              <Clock className="banner-icon" size={24} />
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900 tracking-tight">Awaiting Confirmation</h3>
-              <p className="text-sm text-slate-500 font-medium">The store is reviewing your order details.</p>
+            <div className="banner-text">
+              <h3>Awaiting Confirmation</h3>
+              <p>The store is reviewing your order details.</p>
             </div>
           </div>
           <div className="hidden md:block">
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-3 py-1 rounded-full">Intake Priority: HIGH</span>
+            <span className="priority-badge">Intake Priority: HIGH</span>
           </div>
         </div>
       )}
 
       {/* Hero Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="hero-stats-grid">
         <StatusCard
           label="Estimated Arrival"
           value="Today, 4:30 PM"
           icon={Clock}
-          color="text-blue-600 bg-blue-50"
+          color="text-blue-600 bg-blue-50" // Keeping inline tailwind for colors passed as props for now as StatusCard uses them directly for className construction in original
         />
         <StatusCard
           label="Shipping From"
           value="Kathmandu Hub"
           icon={MapPin}
-          color="text-purple-600 bg-purple-50"
+          color="text-purple-600 bg-purple-50" // Same here
         />
         <StatusCard
           label="Courier"
           value="Ram Bahadur"
           icon={User}
-          color="text-orange-600 bg-orange-50"
+          color="text-orange-600 bg-orange-50" // Same here
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="main-grid">
         {/* Progress Column */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-slate-50 to-white">
+        <div className="timeline-column" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="timeline-card">
+            <div className="timeline-header">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Delivery Timeline</h2>
+                <h2 className="text-xl font-bold tracking-tight">Delivery Timeline</h2>
                 <p className="text-sm text-slate-500 font-medium">Real-time tracking enabled</p>
               </div>
             </div>
 
-            <div className="p-8 space-y-8 relative">
+            <div className="timeline-container">
               {/* Connector Line */}
-              <div className="absolute left-[3.25rem] top-10 bottom-10 w-0.5 bg-slate-100"></div>
+              <div className="timeline-line"></div>
 
               {STEPS.map((step) => {
                 const isCompleted = currentStep > step.id;
@@ -107,13 +108,11 @@ export function DeliveryTracking() {
                 const Icon = step.icon;
 
                 return (
-                  <div key={step.id} className="relative flex gap-6 group">
+                  <div key={step.id} className="timeline-step">
                     {/* Step Indicator */}
                     <div className={`
-                      relative z-10 size-10 rounded-2xl flex items-center justify-center transition-all duration-500 border-2
-                      ${isCompleted ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-200 scale-110" :
-                        isActive ? "bg-white border-blue-600 text-blue-600 shadow-xl shadow-blue-100 scale-125 ring-4 ring-blue-50" :
-                          "bg-white border-slate-200 text-slate-300"}
+                      step-icon-box
+                      ${isCompleted ? "step-completed" : isActive ? "step-active" : "step-pending"}
                     `}>
                       <Icon size={isCompleted ? 18 : 22} className={isCompleted ? "text-white" : ""} />
                     </div>
@@ -139,27 +138,27 @@ export function DeliveryTracking() {
 
           {/* Live Map Simulation Area */}
           {currentStep === 3 && (
-            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl relative h-80 border-4 border-white">
+            <div className="map-container">
               <LiveMap destination="Baluwatar-04, Kathmandu" />
             </div>
           )}
         </div>
 
         {/* Info Column */}
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Destination Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+          <div className="info-card">
             <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
               <MapPin size={18} className="text-red-500" />
               Delivery Address
             </h3>
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4" style={{ backgroundColor: '#f8fafc' }}>
               <p className="text-sm font-bold text-slate-800">Baluwatar-04, Kathmandu</p>
               <p className="text-xs text-slate-500 mt-1">Near Speaker's House, Nepal</p>
             </div>
             <Button
               variant="outline"
-              className="w-full text-xs font-bold gap-2 py-5 rounded-xl border-slate-200 hover:bg-slate-50"
+              className="w-full text-xs font-bold gap-2 py-5 rounded-xl"
               onClick={() => window.open('https://www.google.com/maps/search/?api=1&query=Baluwatar-04,+Kathmandu', '_blank')}
             >
               <ExternalLink size={14} className="text-slate-400" />
@@ -168,9 +167,7 @@ export function DeliveryTracking() {
           </div>
 
           {/* Owner/Support Card */}
-          <div className={`p-6 rounded-3xl border transition-all duration-500 ${currentStep === 1
-              ? "bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-200"
-              : "bg-white border-slate-200 text-slate-800"
+          <div className={`info-card transition-all duration-500 ${currentStep === 1 ? "blue" : ""
             }`}>
             <h3 className={`font-bold mb-4 flex items-center gap-2 ${currentStep === 1 ? "text-white" : "text-slate-900"}`}>
               <Phone size={18} />
@@ -179,7 +176,7 @@ export function DeliveryTracking() {
 
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className={`size-10 rounded-xl flex items-center justify-center font-bold ${currentStep === 1 ? "bg-white/20" : "bg-slate-100"}`}>
+                <div className={`size-10 rounded-xl flex items-center justify-center font-bold ${currentStep === 1 ? "bg-white/20" : "bg-slate-100"}`} style={{ width: '2.5rem', height: '2.5rem' }}>
                   AK
                 </div>
                 <div>
@@ -188,7 +185,7 @@ export function DeliveryTracking() {
                 </div>
               </div>
 
-              <div className={`p-3 rounded-2xl transition-colors ${currentStep === 1 ? "bg-white/10 border border-white/20" : "bg-slate-50 border border-slate-100"}`}>
+              <div className={`p-3 rounded-2xl transition-colors ${currentStep === 1 ? "bg-white/10 border border-white/20" : "bg-slate-50 border border-slate-100"}`} style={{ backgroundColor: currentStep === 1 ? 'rgba(255,255,255,0.1)' : '#f8fafc' }}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${currentStep === 1 ? "text-blue-100" : "text-slate-400"}`}>Direct Line</p>
                 <p className="font-mono font-bold">+977 9766205175</p>
               </div>
@@ -196,11 +193,11 @@ export function DeliveryTracking() {
               <div className="flex gap-2">
                 <button
                   onClick={() => alert('Calling owner...')}
-                  className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${currentStep === 1 ? "bg-white text-blue-600 hover:scale-[1.02]" : "bg-blue-600 text-white hover:bg-blue-700"
+                  className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all ${currentStep === 1 ? "bg-white text-blue-600" : "bg-blue-600 text-white"
                     }`}>
                   Call Now
                 </button>
-                <button className={`p-3 rounded-xl transition-all ${currentStep === 1 ? "bg-white/20 hover:bg-white/30" : "bg-slate-100 hover:bg-slate-200"
+                <button className={`p-3 rounded-xl transition-all ${currentStep === 1 ? "bg-white/20" : "bg-slate-100"
                   }`}>
                   <MessageSquare size={16} />
                 </button>
@@ -209,7 +206,7 @@ export function DeliveryTracking() {
           </div>
 
           {/* Need Help Card */}
-          <div className="bg-slate-900 rounded-3xl p-6 text-white overflow-hidden relative group">
+          <div className="help-card group">
             <div className="absolute top-0 right-0 -mt-4 -mr-4 size-24 bg-blue-600/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
             <h3 className="font-bold mb-2 flex items-center gap-2">
               <AlertCircle size={18} className="text-blue-400" />
@@ -218,12 +215,12 @@ export function DeliveryTracking() {
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
               If there's any issue with your delivery, our support team is available 24/7.
             </p>
-            <button className="w-full py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-xs font-bold transition-all">
+            <button className="w-full py-2.5 bg-white/10 border border-white/10 rounded-xl text-xs font-bold transition-all">
               Chat with Agent
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl border border-slate-200 p-6">
+          <div className="info-card">
             <h3 className="font-bold text-slate-900 mb-4">Quality Assurance</h3>
             <div className="space-y-3">
               <QualityItem label="Fragile Handling" checked />
@@ -239,8 +236,8 @@ export function DeliveryTracking() {
 
 function StatusCard({ label, value, icon: Icon, color }: any) {
   return (
-    <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4 transition-transform hover:-translate-y-1 hover:shadow-lg duration-300">
-      <div className={`size-12 rounded-2xl flex items-center justify-center ${color}`}>
+    <div className="status-card">
+      <div className={`status-card-icon ${color}`}>
         <Icon size={24} />
       </div>
       <div>

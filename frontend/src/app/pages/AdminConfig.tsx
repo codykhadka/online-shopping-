@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Settings, Save, Globe, Truck, DollarSign, Store, ShieldCheck, BellRing } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { toast } from "sonner";
+import "@/styles/AdminConfig.css";
 
 export function AdminConfig() {
   const [config, setConfig] = useState<any>({
@@ -48,47 +49,47 @@ export function AdminConfig() {
   if (loading) return <div className="p-8 text-zinc-500 animate-pulse">Loading System Matrix...</div>;
 
   return (
-    <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between">
+    <div className="admin-config-container">
+      <div className="header-row">
         <div>
-          <h2 className="text-2xl font-bold text-zinc-100 tracking-tight flex items-center gap-3">
-            <Settings className="text-blue-500" />
+          <h2 className="page-title">
+            <Settings className="title-icon" />
             System Configuration
           </h2>
-          <p className="text-sm text-zinc-500 mt-1 font-medium">Manage global parameters and store behavior</p>
+          <p className="page-description">Manage global parameters and store behavior</p>
         </div>
-        <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white gap-2 px-6">
+        <Button onClick={handleSave} className="deploy-btn">
           <Save size={18} />
           Deploy Changes
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="config-grid">
         {/* General Settings */}
-        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 space-y-6 shadow-2xl">
-          <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Store size={14} className="text-blue-500" />
+        <div className="config-card">
+          <h3 className="section-header">
+            <Store size={14} className="section-icon" />
             Identity & Localization
           </h3>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">Store Nomenclature</label>
-              <input 
-                type="text" 
+
+          <div className="input-group">
+            <div className="input-wrapper">
+              <label className="input-label">Store Nomenclature</label>
+              <input
+                type="text"
                 value={config.store_name}
-                onChange={e => setConfig({...config, store_name: e.target.value})}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 outline-none focus:border-blue-500/50 transition-colors"
+                onChange={e => setConfig({ ...config, store_name: e.target.value })}
+                className="text-input"
                 placeholder="e.g. Danphe Organic"
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">Primary Currency Tag</label>
-              <select 
+            <div className="input-wrapper">
+              <label className="input-label">Primary Currency Tag</label>
+              <select
                 value={config.currency}
-                onChange={e => setConfig({...config, currency: e.target.value})}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 outline-none focus:border-blue-500/50 transition-colors appearance-none"
+                onChange={e => setConfig({ ...config, currency: e.target.value })}
+                className="select-input"
               >
                 <option value="Rs.">Nepalese Rupee (Rs.)</option>
                 <option value="$">US Dollar ($)</option>
@@ -99,35 +100,35 @@ export function AdminConfig() {
         </div>
 
         {/* Logistics Configuration */}
-        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 space-y-6 shadow-2xl">
-          <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-            <Truck size={14} className="text-blue-500" />
+        <div className="config-card">
+          <h3 className="section-header">
+            <Truck size={14} className="section-icon" />
             Logistics Parameters
           </h3>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">Standard Delivery Fee</label>
-              <div className="relative">
-                <DollarSign size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-                <input 
-                  type="number" 
+
+          <div className="input-group">
+            <div className="input-wrapper">
+              <label className="input-label">Standard Delivery Fee</label>
+              <div className="currency-icon-wrapper">
+                <DollarSign size={14} className="currency-icon" />
+                <input
+                  type="number"
                   value={config.delivery_charge_standard}
-                  onChange={e => setConfig({...config, delivery_charge_standard: e.target.value})}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-zinc-100 outline-none focus:border-blue-500/50 transition-colors"
+                  onChange={e => setConfig({ ...config, delivery_charge_standard: e.target.value })}
+                  className="text-input has-icon"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">Express Deployment Fee</label>
-              <div className="relative">
-                <DollarSign size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-                <input 
-                  type="number" 
+            <div className="input-wrapper">
+              <label className="input-label">Express Deployment Fee</label>
+              <div className="currency-icon-wrapper">
+                <DollarSign size={14} className="currency-icon" />
+                <input
+                  type="number"
                   value={config.delivery_charge_express}
-                  onChange={e => setConfig({...config, delivery_charge_express: e.target.value})}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-zinc-100 outline-none focus:border-blue-500/50 transition-colors"
+                  onChange={e => setConfig({ ...config, delivery_charge_express: e.target.value })}
+                  className="text-input has-icon"
                 />
               </div>
             </div>
@@ -135,28 +136,28 @@ export function AdminConfig() {
         </div>
 
         {/* System Intelligence */}
-        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 md:col-span-2 shadow-2xl">
-          <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-6">
-            <ShieldCheck size={14} className="text-blue-500" />
+        <div className="config-card span-2-cols">
+          <h3 className="section-header" style={{ marginBottom: '1.5rem' }}>
+            <ShieldCheck size={14} className="section-icon" />
             Advanced Matrix Controls
           </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <ConfigToggle 
-              icon={Globe} 
-              label="Live Telemetry" 
+
+          <div className="config-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+            <ConfigToggle
+              icon={Globe}
+              label="Live Telemetry"
               description="Real-time monitoring of all active logistics"
               enabled={true}
             />
-            <ConfigToggle 
-              icon={BellRing} 
-              label="Push Notifications" 
+            <ConfigToggle
+              icon={BellRing}
+              label="Push Notifications"
               description="Instant alerts for admin status changes"
               enabled={true}
             />
-            <ConfigToggle 
-              icon={ShieldCheck} 
-              label="Auto-Clearance" 
+            <ConfigToggle
+              icon={ShieldCheck}
+              label="Auto-Clearance"
               description="Experimental: AI-driven order validation"
               enabled={false}
             />
@@ -169,15 +170,15 @@ export function AdminConfig() {
 
 function ConfigToggle({ icon: Icon, label, description, enabled }: any) {
   return (
-    <div className="flex gap-4 items-start p-4 bg-zinc-900/50 rounded-2xl border border-zinc-800/50 hover:border-blue-500/20 transition-all cursor-pointer group">
-      <div className={`p-2 rounded-xl transition-colors ${enabled ? "bg-blue-500/10 text-blue-500" : "bg-zinc-800 text-zinc-600"}`}>
+    <div className={`config-toggle ${enabled ? 'enabled' : ''}`}>
+      <div className="toggle-icon-box">
         <Icon size={18} />
       </div>
-      <div className="flex-1">
-        <p className={`text-xs font-bold ${enabled ? "text-zinc-100" : "text-zinc-500"}`}>{label}</p>
-        <p className="text-[10px] text-zinc-600 mt-1 leading-relaxed">{description}</p>
+      <div className="toggle-text">
+        <p className="toggle-label">{label}</p>
+        <p className="toggle-desc">{description}</p>
       </div>
-      <div className={`size-4 rounded-full border-2 mt-1 shrink-0 transition-all ${enabled ? "border-blue-500 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "border-zinc-700"}`}></div>
+      <div className="toggle-indicator"></div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { setAdminSession } from "../utils/adminAuth";
 import { Shield, Lock, User, Eye, EyeOff, Cpu, Key, Send, X as CloseIcon } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
+import "@/styles/AdminLogin.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
@@ -98,14 +99,14 @@ export function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center px-4">
+    <div className="admin-login-container">
       {/* Background grid glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:44px_44px]" />
+      <div className="bg-grid-glow-wrapper">
+        <div className="bg-grid" />
         <motion.div
           animate={{ opacity: [0.1, 0.2, 0.1], scale: [1, 1.2, 1] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/4 left-1/2 -translate-x-1/2 size-[600px] bg-blue-600/10 rounded-full blur-[120px]"
+          className="bg-blob"
         />
       </div>
 
@@ -113,62 +114,62 @@ export function AdminLogin() {
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-md"
+        className="login-card-wrapper"
       >
         {/* Card */}
-        <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 shadow-2xl">
+        <div className="login-card">
           {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
+          <div className="logo-container">
             <motion.div
               animate={{ boxShadow: ["0 0 0px 0px rgba(59,130,246,0)", "0 0 30px 8px rgba(59,130,246,0.25)", "0 0 0px 0px rgba(59,130,246,0)"] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-              className="size-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-xl shadow-blue-900/40"
+              className="logo-icon-wrapper"
             >
-              <Cpu size={28} className="text-white" />
+              <Cpu size={28} className="logo-icon" />
             </motion.div>
-            <h1 className="text-xl font-black text-zinc-100 tracking-tight">Command Center</h1>
-            <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-1">Admin Access Only</p>
+            <h1 className="logo-title">Command Center</h1>
+            <p className="logo-subtitle">Admin Access Only</p>
           </div>
 
           {/* Warning badge */}
-          <div className="flex items-center gap-2 mb-6 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-            <Shield size={14} className="text-amber-400 shrink-0" />
-            <p className="text-[11px] text-amber-300 font-bold">Restricted area. Authorized personnel only.</p>
+          <div className="warning-badge">
+            <Shield size={14} className="warning-icon" />
+            <p className="warning-text">Restricted area. Authorized personnel only.</p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="login-form">
             <div>
-              <label className="text-[11px] font-black text-zinc-500 uppercase tracking-widest block mb-1.5">Admin Username</label>
-              <div className="relative">
-                <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <label className="input-label">Admin Username</label>
+              <div className="input-wrapper">
+                <User size={15} className="input-icon" />
                 <input
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   placeholder="admin"
                   autoComplete="username"
-                  className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors"
+                  className="text-input with-icon"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[11px] font-black text-zinc-500 uppercase tracking-widest block mb-1.5">Password</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <label className="input-label">Password</label>
+              <div className="input-wrapper">
+                <Lock size={15} className="input-icon" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  className="w-full pl-10 pr-11 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors"
+                  className="text-input with-icon with-toggle"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors"
+                  className="password-toggle"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -178,11 +179,11 @@ export function AdminLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-2 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-sm uppercase tracking-widest rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
+              className="submit-btn"
             >
               {isLoading ? (
                 <>
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="size-4 border-2 border-white/30 border-t-white rounded-full" />
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="loading-spinner" />
                   Authenticating...
                 </>
               ) : (
@@ -195,15 +196,15 @@ export function AdminLogin() {
           </form>
 
           {/* Hint & Forgot Password */}
-          <div className="mt-6 flex flex-col items-center gap-4">
-            <button 
+          <div className="links-container">
+            <button
               type="button"
               onClick={() => setShowRecovery(true)}
-              className="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400 transition-colors"
+              className="forgot-password-btn"
             >
               Forgot Access Credentials?
             </button>
-            <p className="text-[9px] text-zinc-700 font-mono text-center">
+            <p className="hint-text">
               Default Protocol: admin / admin123
             </p>
           </div>
@@ -212,7 +213,7 @@ export function AdminLogin() {
         {/* Back link */}
         <button
           onClick={() => navigate("/")}
-          className="w-full mt-4 text-center text-xs text-zinc-600 hover:text-zinc-400 transition-colors font-medium py-2"
+          className="back-to-store-btn"
         >
           ← Return to Store
         </button>
@@ -221,87 +222,87 @@ export function AdminLogin() {
       {/* Admin Recovery Modal */}
       <AnimatePresence>
         {showRecovery && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="recovery-overlay">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowRecovery(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+              className="recovery-backdrop"
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-zinc-950 border border-zinc-800 w-full max-w-sm rounded-3xl p-10 shadow-2xl relative z-10 overflow-hidden"
+              className="recovery-modal"
             >
-              <button 
+              <button
                 onClick={() => setShowRecovery(false)}
-                className="absolute top-6 right-6 p-2 text-zinc-600 hover:text-zinc-100 transition-colors"
+                className="close-modal-btn"
               >
                 <CloseIcon size={20} />
               </button>
 
-              <div className="flex flex-col items-center mb-8 text-center pt-4">
-                <div className="size-16 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-xl shadow-blue-900/40">
-                  <Key size={28} className="text-white" />
+              <div className="recovery-header">
+                <div className="logo-icon-wrapper" style={{ marginBottom: '1.5rem' }}>
+                  <Key size={28} className="logo-icon" />
                 </div>
-                <h3 className="text-xl font-black text-zinc-100 uppercase tracking-widest">Protocol Recovery</h3>
+                <h3 className="recovery-title">Protocol Recovery</h3>
               </div>
 
               {recoveryStep === "request" ? (
-                <form onSubmit={handleRecoveryRequest} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block ml-1">Admin Username</label>
-                    <div className="relative">
-                      <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+                <form onSubmit={handleRecoveryRequest} className="recovery-form">
+                  <div className="input-group">
+                    <label className="input-label" style={{ marginLeft: '0.25rem' }}>Admin Username</label>
+                    <div className="input-wrapper">
+                      <User size={15} className="input-icon" />
                       <input
                         type="text"
                         value={recoveryUsername}
                         onChange={e => setRecoveryUsername(e.target.value)}
                         placeholder="admin"
-                        className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 outline-none focus:border-blue-500/50"
+                        className="text-input with-icon"
                       />
                     </div>
                   </div>
                   <button
                     type="submit"
                     disabled={isRecovering}
-                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-[11px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+                    className="recovery-btn request"
                   >
                     {isRecovering ? "Syncing..." : "Initiate Recovery"}
                     <Send size={14} />
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleRecoveryReset} className="space-y-4">
-                  <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl mb-4">
-                    <p className="text-[10px] text-blue-400 font-bold leading-relaxed text-center">
+                <form onSubmit={handleRecoveryReset} className="recovery-form reset">
+                  <div className="recovery-info-box">
+                    <p className="recovery-info-text">
                       Security Verification Required. Check Command Console for Access Token.
                     </p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="input-group">
                     <input
                       type="text"
                       value={recoveryToken}
                       onChange={e => setRecoveryToken(e.target.value)}
                       placeholder="ACCESS-TOKEN"
-                      className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 text-center font-mono tracking-widest uppercase"
+                      className="token-input"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="input-group">
                     <input
                       type="password"
                       value={recoveryNewPassword}
                       onChange={e => setRecoveryNewPassword(e.target.value)}
                       placeholder="New Secure Password"
-                      className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200"
+                      className="text-input"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isRecovering}
-                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[11px] uppercase tracking-widest rounded-xl transition-all"
+                    className="recovery-btn reset"
                   >
                     {isRecovering ? "Securing..." : "Restore Authorization"}
                   </button>

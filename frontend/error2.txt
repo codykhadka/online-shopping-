@@ -1,0 +1,16 @@
+
+> @figma/my-make-file@0.0.1 build
+> vite build
+
+[36mvite v6.3.5 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 1727 modules transformed.
+[31m✗[39m Build failed in 2.45s
+[31merror during build:
+[31m[vite:load-fallback] Could not load C:\Users\codyk\Downloads\Product app\frontend\src/styles/WelcomePopup.css (imported by src/app/components/WelcomePopup.tsx): ENOENT: no such file or directory, open 'C:\Users\codyk\Downloads\Product app\frontend\src\styles\WelcomePopup.css'[31m
+    at async open (node:internal/fs/promises:636:25)
+    at async Object.readFile (node:internal/fs/promises:1273:14)
+    at async Object.handler (file:///C:/Users/codyk/Downloads/Product%20app/frontend/node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:45843:27)
+    at async PluginDriver.hookFirstAndGetPlugin (file:///C:/Users/codyk/Downloads/Product%20app/frontend/node_modules/rollup/dist/es/shared/node-entry.js:22453:28)
+    at async file:///C:/Users/codyk/Downloads/Product%20app/frontend/node_modules/rollup/dist/es/shared/node-entry.js:21445:33
+    at async Queue.work (file:///C:/Users/codyk/Downloads/Product%20app/frontend/node_modules/rollup/dist/es/shared/node-entry.js:22681:32)[39m

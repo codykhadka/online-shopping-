@@ -1,0 +1,252 @@
+.tracking-page {
+    max-width: 56rem;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    animation: dt-fade-in 0.5s ease-out;
+}
+
+@keyframes dt-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Pending Banner */
+.pending-banner {
+    background-color: #fffbeb;
+    /* bg-amber-50 */
+    border: 1px solid #fde68a;
+    /* border-amber-200 */
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.banner-icon-box {
+    width: 3rem;
+    height: 3rem;
+    background-color: #f59e0b;
+    /* bg-amber-500 */
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 15px -3px rgba(253, 230, 138, 0.5);
+}
+
+.banner-icon {
+    color: white;
+    animation: dt-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes dt-pulse {
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.banner-text h3 {
+    font-weight: 700;
+    color: #0f172a;
+    /* text-slate-900 */
+    letter-spacing: -0.025em;
+}
+
+.banner-text p {
+    font-size: 0.875rem;
+    color: #64748b;
+    /* text-slate-500 */
+    font-weight: 500;
+}
+
+.priority-badge {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #d97706;
+    /* text-amber-600 */
+    background-color: #fef3c7;
+    /* bg-amber-100 */
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+}
+
+/* Stats Grid */
+.hero-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .hero-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.status-card {
+    background-color: white;
+    padding: 1.25rem;
+    border-radius: 1.5rem;
+    border: 1px solid #e2e8f0;
+    /* border-slate-200 */
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.3s;
+}
+
+.status-card:hover {
+    transform: translateY(-0.25rem);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.status-card-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Main Layout */
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+    .main-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .timeline-column {
+        grid-column: span 2;
+    }
+}
+
+/* Timeline */
+.timeline-card {
+    background-color: white;
+    border-radius: 1.5rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 25px -5px rgba(226, 232, 240, 0.5);
+    overflow: hidden;
+}
+
+.timeline-header {
+    padding: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+    background-image: linear-gradient(to right, #f8fafc, white);
+}
+
+.timeline-container {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    position: relative;
+}
+
+.timeline-line {
+    position: absolute;
+    left: 3.25rem;
+    top: 2.5rem;
+    bottom: 2.5rem;
+    width: 2px;
+    background-color: #f1f5f9;
+}
+
+.timeline-step {
+    display: flex;
+    gap: 1.5rem;
+    position: relative;
+}
+
+.step-icon-box {
+    position: relative;
+    z-index: 10;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+    transition: all 0.5s;
+}
+
+.step-completed {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+.step-active {
+    background-color: white;
+    border-color: #2563eb;
+    color: #2563eb;
+    box-shadow: 0 0 0 4px #eff6ff;
+    /* ring-blue-50 */
+    transform: scale(1.25);
+}
+
+.step-pending {
+    background-color: white;
+    border-color: #e2e8f0;
+    color: #cbd5e1;
+}
+
+/* Info Cards */
+.info-card {
+    background-color: white;
+    border-radius: 1.5rem;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.info-card.blue {
+    background-color: #2563eb;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.help-card {
+    background-color: #0f172a;
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.map-container {
+    background-color: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    position: relative;
+    height: 20rem;
+    border: 4px solid white;
+}

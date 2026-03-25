@@ -20,3 +20,4 @@ export async function apiFetch<T>(
 
   return res.json() as Promise<T>;
 }
+

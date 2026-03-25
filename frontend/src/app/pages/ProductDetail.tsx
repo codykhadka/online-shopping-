@@ -7,6 +7,7 @@ import { PaymentDialog } from "../components/PaymentDialog";
 import { useState, useEffect } from "react";
 import { useAuth } from "../AuthProvider";
 import { motion } from "motion/react";
+import "@/styles/ProductDetail.css";
 
 interface ProductDetailProps {
   onAddToCart: (product: Product) => void;
@@ -49,10 +50,10 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-green-600">
-          <Loader2 size={40} className="animate-spin" />
-          <p className="text-sm font-semibold text-gray-500">Loading product...</p>
+      <div className="loading-container">
+        <div className="loading-content">
+          <Loader2 size={40} className="loading-spinner" />
+          <p className="loading-text">Loading product...</p>
         </div>
       </div>
     );
@@ -60,11 +61,11 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
 
   if (notFound || !product) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4 text-center px-4">
-        <p className="text-5xl">🌿</p>
-        <h1 className="text-2xl font-black text-gray-800">Product Not Found</h1>
-        <p className="text-gray-500 max-w-sm">This product doesn't exist or may have been removed.</p>
-        <Link to="/" className="mt-2 px-6 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-500 transition-colors">
+      <div className="not-found-container">
+        <p className="not-found-emoji">🌿</p>
+        <h1 className="not-found-title">Product Not Found</h1>
+        <p className="not-found-text">This product doesn't exist or may have been moved.</p>
+        <Link to="/" className="not-found-link">
           Back to Store
         </Link>
       </div>
@@ -78,23 +79,23 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
     : recommended;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 pt-24">
+    <div className="product-detail-page">
+      <div className="product-detail-container">
         {/* Back Button */}
-        <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
-          <ArrowLeft className="size-4" />
+        <Link to="/" className="back-to-products-link">
+          <ArrowLeft />
           Back to Products
         </Link>
 
-        <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+        <div className="product-detail-grid">
           {/* Product Image */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
-            className="bg-white rounded-2xl overflow-hidden shadow-md"
+            className="product-image-card"
           >
-            <img src={product.image} alt={product.name} className="w-full aspect-square object-cover" />
+            <img src={product.image} alt={product.name} className="product-image-main" />
           </motion.div>
 
           {/* Product Info */}
@@ -102,74 +103,74 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
-            className="space-y-6"
+            className="product-info-container"
           >
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge>{product.category}</Badge>
-                {!product.inStock && <Badge variant="secondary">Out of Stock</Badge>}
+              <div className="product-badges">
+                <Badge className="badge primary">{product.category}</Badge>
+                {!product.inStock && <Badge className="badge secondary">Out of Stock</Badge>}
               </div>
-              <h1 className="text-3xl md:text-4xl mb-4">{product.name}</h1>
+              <h1 className="product-title">{product.name}</h1>
 
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-1">
+              <div className="global-rating-container">
+                <div className="global-rating-stars">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`size-5 ${i < Math.floor(product.rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                    <Star key={i} className={i < Math.floor(product.rating) ? "filled" : "empty"} />
                   ))}
                 </div>
-                <span className="text-lg text-gray-600">{product.rating}</span>
+                <span className="global-rating-value">{product.rating}</span>
               </div>
 
               {/* User Rating */}
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2">Rate this product:</h3>
-                <div className="flex items-center gap-1">
+              <div className="user-rating-section">
+                <h3 className="user-rating-title">Rate this product:</h3>
+                <div className="user-rating-stars-container">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`size-6 cursor-pointer transition-colors ${i < userRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300 hover:text-yellow-400"}`}
+                      className={i < userRating ? "rated" : "unrated"}
                       onClick={() => setUserRating(i + 1)}
                     />
                   ))}
                 </div>
-                {userRating > 0 && <p className="text-sm text-gray-500 mt-1">You rated: {userRating} star{userRating > 1 ? 's' : ''}</p>}
+                {userRating > 0 && <p className="user-rating-feedback">You rated: {userRating} star{userRating > 1 ? 's' : ''}</p>}
               </div>
 
               {product.discountPrice ? (
-                <div className="mb-6">
-                  <p className="text-3xl font-bold text-green-700 leading-none">Rs {Math.round(product.discountPrice * 133).toLocaleString()}</p>
-                  <p className="text-lg font-medium text-gray-400 line-through mt-1">Rs {Math.round(product.price * 133).toLocaleString()}</p>
+                <div className="price-section">
+                  <p className="price-discounted">Rs {Math.round(product.discountPrice * 133).toLocaleString()}</p>
+                  <p className="price-original">Rs {Math.round(product.price * 133).toLocaleString()}</p>
                 </div>
               ) : (
-                <p className="text-3xl font-bold text-green-700 mb-6">Rs {Math.round(product.price * 133).toLocaleString()}</p>
+                <p className="price-regular">Rs {Math.round(product.price * 133).toLocaleString()}</p>
               )}
             </div>
 
             <div>
-              <h2 className="text-xl mb-3">Description</h2>
-              <p className="text-gray-600 leading-relaxed">{product.description}</p>
+              <h2 className="section-title">Description</h2>
+              <p className="description-text">{product.description}</p>
             </div>
 
             {product.features?.length > 0 && (
               <div>
-                <h2 className="text-xl mb-3">Key Features</h2>
-                <ul className="space-y-2">
+                <h2 className="section-title">Key Features</h2>
+                <ul className="features-list">
                   {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Check className="size-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-600">{feature}</span>
+                    <li key={index} className="feature-item">
+                      <Check className="feature-icon" />
+                      <span className="feature-text">{feature}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
 
-            <div className="flex gap-3 pt-4">
-              <Button size="lg" className="flex-1" onClick={() => onAddToCart(product)} disabled={!product.inStock}>
-                <ShoppingCart className="size-5 mr-2" />
+            <div className="action-buttons">
+              <Button size="lg" className="btn" onClick={() => onAddToCart(product)} disabled={!product.inStock}>
+                <ShoppingCart className="btn-icon" />
                 {product.inStock ? "Add to Cart" : "Out of Stock"}
               </Button>
-              <Button size="lg" variant="outline" onClick={handleBuyNow} disabled={!product.inStock}>
+              <Button size="lg" variant="outline" className="btn" onClick={handleBuyNow} disabled={!product.inStock}>
                 Buy Now
               </Button>
             </div>

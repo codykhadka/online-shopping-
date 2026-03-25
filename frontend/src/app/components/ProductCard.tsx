@@ -3,7 +3,7 @@ import { Star, ShoppingCart, Leaf } from "lucide-react";
 import { Link } from "react-router";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-
+import "@/styles/ui styles/ProductCard.css";
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
@@ -15,79 +15,76 @@ export function ProductCard({ product, onAddToCart, userRating = 0, onRate }: Pr
   return (
     <Link
       to={`/product/${product.id}`}
-      className="group bg-white rounded-2xl border-transparent shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+      className="product-card-link"
     >
-      <div className="aspect-square overflow-hidden bg-green-50/50 relative">
+      <div className="product-image-wrapper">
         <img
           src={product.image}
           alt={product.name}
-          className="size-full object-cover group-hover:scale-110 transition-transform duration-500"
+          className="product-image"
         />
-        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-green-800 shadow-sm flex items-center gap-1">
-          <Leaf className="size-3" /> Organic 
+        <div className="organic-badge">
+          <Leaf className="organic-badge-icon" /> Organic
         </div>
       </div>
 
-      <div className="p-5 flex flex-col flex-grow">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="flex-1 line-clamp-2 font-bold text-gray-800">{product.name}</h3>
+      <div className="product-content">
+        <div className="product-header">
+          <h3 className="product-name">{product.name}</h3>
           {!product.inStock && (
-            <Badge variant="secondary" className="text-xs">Out of Stock</Badge>
+            <span className="out-of-stock-badge">Out of Stock</span>
           )}
         </div>
 
-        <div className="flex items-center gap-1 mb-1">
-          <Star className="size-3 fill-yellow-400 text-yellow-400" />
-          <span className="text-xs text-gray-500">Global: {product.rating}</span>
+        <div className="global-rating">
+          <Star className="global-rating-star" />
+          <span className="global-rating-text">Global: {product.rating}</span>
         </div>
 
-        <div className="flex flex-col gap-1 mb-3">
-          <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Your Rating</span>
-          <div className="flex items-center gap-0.5" onClick={(e) => e.preventDefault()}>
+        <div className="user-rating-container">
+          <span className="user-rating-label">Your Rating</span>
+          <div className="user-rating-stars" onClick={(e) => e.preventDefault()}>
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
-                className={`size-4 cursor-pointer transition-colors ${
-                  i < userRating
-                    ? "fill-yellow-400 text-yellow-400"
-                    : "text-gray-200 hover:text-yellow-400"
-                }`}
+                className={`user-rating-star ${i < userRating
+                  ? "rated"
+                  : "unrated"
+                  }`}
                 onClick={() => onRate?.(i + 1)}
               />
             ))}
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2 flex-grow">
+        <p className="product-description">
           {product.description}
         </p>
 
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex flex-col">
+        <div className="product-footer">
+          <div className="price-container">
             {product.discountPrice ? (
               <>
-                <span className="text-xl font-bold text-green-700 leading-none">Rs {Math.round(product.discountPrice * 133).toLocaleString()}</span>
-                <span className="text-xs font-medium text-gray-400 line-through mt-0.5">Rs {Math.round(product.price * 133).toLocaleString()}</span>
+                <span className="discount-price">Rs {Math.round(product.discountPrice * 133).toLocaleString()}</span>
+                <span className="original-price">Rs {Math.round(product.price * 133).toLocaleString()}</span>
               </>
             ) : (
-              <span className="text-xl font-bold text-green-700">Rs {Math.round(product.price * 133).toLocaleString()}</span>
+              <span className="regular-price">Rs {Math.round(product.price * 133).toLocaleString()}</span>
             )}
           </div>
-          <Button
-            size="sm"
+          <button
             onClick={(e) => {
               e.preventDefault();
               onAddToCart(product);
             }}
             disabled={!product.inStock}
-            className="rounded-full bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all"
+            className="add-to-cart-btn"
           >
-            <ShoppingCart className="size-4 mr-1.5" />
+            <ShoppingCart className="add-to-cart-icon" />
             Add
-          </Button>
+          </button>
         </div>
       </div>
     </Link>
   );
 }
-

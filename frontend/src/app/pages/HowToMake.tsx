@@ -20,9 +20,10 @@ import {
   Leaf,
 } from "lucide-react";
 import { toast } from "sonner";
+import "@/styles/HowToMake.css";
 
 
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";   
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -60,7 +61,7 @@ function DifficultyBadge({ level }: { level: HowToGuide["difficulty"] }) {
     Hard: "bg-red-100 text-red-700 border-red-200",
   };
   return (
-    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${colors[level]}`}>
+    <span className={`difficulty-badge ${level}`}>
       {level}
     </span>
   );
@@ -79,53 +80,53 @@ function GuideModal({ guide, onClose }: { guide: HowToGuide; onClose: () => void
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      className="guide-modal-overlay"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+      <div className="guide-modal-backdrop" />
       <motion.div
         initial={{ scale: 0.9, y: 40, opacity: 0 }}
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.92, y: 20, opacity: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 22 }}
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="guide-modal-content"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Image */}
-        <div className="relative h-56 bg-green-50 overflow-hidden rounded-t-3xl shrink-0">
-          <img src={guide.image} alt={guide.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-          <div className="absolute bottom-4 left-6 right-14">
-            <h2 className="text-2xl font-black text-white leading-tight">{guide.title}</h2>
-            <div className="flex items-center gap-3 mt-2">
+        <div className="guide-modal-header-img">
+          <img src={guide.image} alt={guide.title} />
+          <div className="overlay" />
+          <div className="guide-modal-header-content">
+            <h2 className="title">{guide.title}</h2>
+            <div className="meta">
               <DifficultyBadge level={guide.difficulty} />
-              <span className="flex items-center gap-1 text-white/80 text-xs font-semibold">
+              <span className="time">
                 <Clock size={12} /> {guide.timeToMake}
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/35 backdrop-blur-sm rounded-full text-white transition-colors"
+            className="guide-modal-close-btn"
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="guide-modal-body">
           {/* Ingredients */}
           {guide.ingredients && (
             <div>
-              <h3 className="flex items-center gap-2 font-extrabold text-neutral-800 mb-3 text-base">
-                <Utensils size={16} className="text-green-600" /> Ingredients
+              <h3 className="guide-modal-section-title">
+                <Utensils size={16} className="icon" /> Ingredients
               </h3>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <ul className="guide-modal-ingredients-grid">
                 {guide.ingredients.map((ing, i) => (
                   <li
                     key={i}
-                    className="flex items-start gap-2 text-sm text-neutral-600 bg-green-50 rounded-xl px-3 py-2 border border-green-100"
+                    className="guide-modal-ingredient"
                   >
-                    <span className="text-green-500 font-bold mt-0.5">•</span>
+                    <span className="dot">•</span>
                     {ing}
                   </li>
                 ))}
@@ -135,22 +136,22 @@ function GuideModal({ guide, onClose }: { guide: HowToGuide; onClose: () => void
 
           {/* Steps */}
           <div>
-            <h3 className="flex items-center gap-2 font-extrabold text-neutral-800 mb-3 text-base">
-              <ChefHat size={16} className="text-green-600" /> How To Make
+            <h3 className="guide-modal-section-title">
+              <ChefHat size={16} className="icon" /> How To Make
             </h3>
-            <ol className="space-y-3">
+            <ol className="guide-modal-steps">
               {guide.instructions.map((step, i) => (
                 <motion.li
                   key={i}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.07 }}
-                  className="flex gap-3 items-start"
+                  className="guide-modal-step"
                 >
-                  <span className="shrink-0 size-6 rounded-full bg-green-600 text-white text-xs font-black flex items-center justify-center mt-0.5">
+                  <span className="number">
                     {i + 1}
                   </span>
-                  <p className="text-sm text-neutral-700 leading-relaxed">{step}</p>
+                  <p className="text">{step}</p>
                 </motion.li>
               ))}
             </ol>
@@ -158,20 +159,20 @@ function GuideModal({ guide, onClose }: { guide: HowToGuide; onClose: () => void
 
           {/* Tips */}
           <div>
-            <h3 className="flex items-center gap-2 font-extrabold text-neutral-800 mb-3 text-base">
-              <Lightbulb size={16} className="text-amber-500" /> Pro Tips
+            <h3 className="guide-modal-section-title">
+              <Lightbulb size={16} className="icon" style={{ color: '#f59e0b' }} /> Pro Tips
             </h3>
-            <div className="space-y-2">
+            <div className="guide-modal-tips">
               {guide.tips.map((tip, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.08 }}
-                  className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3"
+                  className="guide-modal-tip"
                 >
-                  <CheckCircle2 size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-900">{tip}</p>
+                  <CheckCircle2 size={15} className="icon" />
+                  <p className="text">{tip}</p>
                 </motion.div>
               ))}
             </div>
@@ -189,35 +190,35 @@ function GuideCard({ guide, onClick }: { guide: HowToGuide; onClick: () => void 
       whileHover={{ y: -7, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 22 }}
       onClick={onClick}
-      className="group bg-white rounded-3xl shadow-sm border border-neutral-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-green-100/60 transition-shadow duration-300 flex flex-col"
+      className="guide-card"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-green-50">
+      <div className="guide-card-image-wrapper">
         <img
           src={guide.image}
           alt={guide.title}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          className="guide-card-image"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <div className="absolute top-3 right-3">
+        <div className="guide-card-image-overlay" />
+        <div className="guide-card-difficulty-badge">
           <DifficultyBadge level={guide.difficulty} />
         </div>
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span className="text-white text-xs font-semibold">View Recipe</span>
-          <ChevronRight size={12} className="text-white" />
+        <div className="guide-card-view-recipe">
+          <span className="text">View Recipe</span>
+          <ChevronRight size={12} className="icon" />
         </div>
       </div>
-      <div className="p-5 flex flex-col flex-grow">
-        <h3 className="font-extrabold text-neutral-900 text-base leading-snug mb-1.5 line-clamp-2">
+      <div className="guide-card-content">
+        <h3 className="guide-card-title">
           {guide.title}
         </h3>
-        <p className="text-sm text-neutral-500 line-clamp-2 flex-grow leading-relaxed">
+        <p className="guide-card-desc">
           {guide.shortDescription}
         </p>
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100">
-          <span className="flex items-center gap-1 text-xs text-neutral-400 font-semibold">
+        <div className="guide-card-footer">
+          <span className="info time">
             <Clock size={12} /> {guide.timeToMake}
           </span>
-          <span className="flex items-center gap-1 text-xs font-bold text-green-600">
+          <span className="info steps">
             <ChefHat size={12} />
             {guide.instructions.length} Steps
           </span>
@@ -275,57 +276,53 @@ function FloatingAiChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 280, damping: 24 }}
-            className="fixed bottom-24 right-5 z-[70] w-[340px] sm:w-[380px] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            className="ai-chat-panel"
             style={{ maxHeight: "min(520px, 75vh)" }}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-600 to-emerald-500 px-5 py-3.5 flex items-center gap-3 shrink-0">
-              <div className="size-9 rounded-full bg-white/20 flex items-center justify-center">
-                <Bot size={18} className="text-white" />
+            <div className="ai-chat-header">
+              <div className="icon-wrapper">
+                <Bot size={18} className="icon" />
               </div>
-              <div className="flex-1">
-                <p className="text-white font-extrabold text-sm">Cooking Assistant</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-green-300 animate-pulse" />
-                  <p className="text-green-100 text-xs">Always online</p>
+              <div className="text-group">
+                <p className="title">Cooking Assistant</p>
+                <div className="status">
+                  <span className="dot" />
+                  <p className="text">Always online</p>
                 </div>
               </div>
-              <Sparkles size={15} className="text-yellow-300 mr-1" />
+              <Sparkles size={15} className="sparkle-icon" />
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-white/20 rounded-full transition-colors text-white/80"
+                className="close-btn"
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto bg-white px-4 py-3 space-y-3 min-h-0">
+            <div className="ai-chat-messages">
               {messages.map((msg, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`ai-chat-message ${msg.role}`}
                 >
                   {msg.role === "assistant" && (
-                    <div className="size-7 rounded-full bg-green-100 flex items-center justify-center shrink-0 mb-0.5">
-                      <Bot size={13} className="text-green-700" />
+                    <div className="avatar">
+                      <Bot size={13} className="icon" />
                     </div>
                   )}
                   <div
-                    className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-green-600 text-white rounded-br-sm font-medium"
-                        : "bg-neutral-100 text-neutral-800 rounded-bl-sm"
-                    }`}
+                    className="bubble"
                   >
                     {msg.text}
                   </div>
                   {msg.role === "user" && (
-                    <div className="size-7 rounded-full bg-green-600 flex items-center justify-center shrink-0 mb-0.5">
-                      <User size={13} className="text-white" />
+                    <div className="avatar">
+                      <User size={13} className="icon" />
                     </div>
                   )}
                 </motion.div>
@@ -334,16 +331,16 @@ function FloatingAiChat() {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-end gap-2"
+                  className="ai-chat-typing-indicator"
                 >
-                  <div className="size-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                    <Bot size={13} className="text-green-700" />
+                  <div className="avatar">
+                    <Bot size={13} className="icon" />
                   </div>
-                  <div className="bg-neutral-100 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-1">
+                  <div className="bubble">
                     {[0, 1, 2].map((i) => (
                       <motion.span
                         key={i}
-                        className="size-1.5 rounded-full bg-neutral-400 inline-block"
+                        className="dot"
                         animate={{ y: [0, -4, 0] }}
                         transition={{ duration: 0.55, repeat: Infinity, delay: i * 0.14 }}
                       />
@@ -356,12 +353,12 @@ function FloatingAiChat() {
 
             {/* Suggestions */}
             {messages.length <= 2 && (
-              <div className="bg-white px-4 pt-1 pb-2 flex flex-wrap gap-1.5">
+              <div className="ai-chat-suggestions">
                 {suggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => setInput(s)}
-                    className="text-xs bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-full px-3 py-1.5 font-semibold transition-colors"
+                    className="ai-chat-suggestion-btn"
                   >
                     {s}
                   </button>
@@ -370,20 +367,20 @@ function FloatingAiChat() {
             )}
 
             {/* Input */}
-            <div className="bg-white px-4 pb-4 pt-2 border-t border-neutral-100 shrink-0">
-              <div className="flex items-center gap-2 bg-neutral-50 rounded-2xl border border-neutral-200 px-4 py-2 focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-100 transition-all">
+            <div className="ai-chat-input-area">
+              <div className="ai-chat-input-wrapper">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about a recipe…"
-                  className="flex-1 text-sm bg-transparent outline-none text-neutral-800 placeholder-neutral-400"
+                  className="ai-chat-input"
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim()}
-                  className="size-8 rounded-xl bg-green-600 hover:bg-green-500 disabled:bg-neutral-200 disabled:text-neutral-400 text-white flex items-center justify-center transition-colors shrink-0"
+                  className="ai-chat-send-btn"
                 >
                   <Send size={13} />
                 </button>
@@ -398,7 +395,7 @@ function FloatingAiChat() {
         onClick={() => setIsOpen((v) => !v)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.93 }}
-        className="fixed bottom-5 right-5 z-[70] size-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-2xl shadow-green-600/40 flex items-center justify-center text-white transition-colors hover:from-green-400 hover:to-emerald-500"
+        className="ai-chat-toggle-btn"
         title={isOpen ? "Close AI Chat" : "Open AI Cooking Assistant"}
       >
         <AnimatePresence mode="wait">
@@ -428,7 +425,7 @@ function FloatingAiChat() {
         {/* Pulse ring */}
         {!isOpen && (
           <motion.span
-            className="absolute inset-0 rounded-full border-2 border-green-400"
+            className="ai-chat-pulse"
             animate={{ scale: [1, 1.55], opacity: [0.6, 0] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
           />
@@ -477,9 +474,9 @@ export function HowToMake() {
 
   const filteredGuides = searchQuery.trim()
     ? howToGuides.filter((g) =>
-        g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        g.shortDescription.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      g.shortDescription.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : howToGuides;
 
   return (
@@ -487,25 +484,25 @@ export function HowToMake() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-neutral-50"
+      className="how-to-make-page"
     >
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-green-700 via-emerald-600 to-teal-600 text-white pt-28 pb-24 overflow-hidden">
+      <section className="htm-hero-section">
         {/* Background decorations */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="htm-hero-decorations">
           <motion.div
             animate={{ scale: [1, 1.18, 1], opacity: [0.18, 0.32, 0.18] }}
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -top-32 -right-32 size-[550px] rounded-full bg-yellow-300/20 blur-3xl"
+            className="htm-hero-blob1"
           />
           <motion.div
             animate={{ scale: [1, 1.22, 1], opacity: [0.12, 0.22, 0.12] }}
             transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 4 }}
-            className="absolute -bottom-32 -left-32 size-[500px] rounded-full bg-teal-300/20 blur-3xl"
+            className="htm-hero-blob2"
           />
           {/* dot grid */}
           <div
-            className="absolute inset-0 opacity-[0.05]"
+            className="htm-hero-dot-grid"
             style={{
               backgroundImage: "radial-gradient(circle, white 1.5px, transparent 1.5px)",
               backgroundSize: "30px 30px",
@@ -513,14 +510,14 @@ export function HowToMake() {
           />
         </div>
 
-        <div className="container mx-auto px-4 relative z-10 text-center">
+        <div className="htm-hero-content">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
-            className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-5 py-2 text-xs font-bold tracking-widest uppercase text-green-100 mb-6"
+            className="htm-hero-badge"
           >
-            <ChefHat size={13} className="text-yellow-300" />
+            <ChefHat size={13} className="icon" />
             Step-by-step cooking guides
           </motion.div>
 
@@ -528,17 +525,17 @@ export function HowToMake() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.15 }}
-            className="text-5xl lg:text-7xl font-black tracking-tight leading-[1.08] mb-5"
+            className="htm-hero-title"
           >
             How To{" "}
-            <span className="text-yellow-300 font-serif italic font-normal">Make</span>
+            <span className="highlight">Make</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="text-green-100/85 text-lg max-w-xl mx-auto leading-relaxed mb-10"
+            className="htm-hero-subtitle"
           >
             Beautiful, easy-to-follow recipes using our organic products. Click any card to explore the full guide.
           </motion.p>
@@ -547,13 +544,13 @@ export function HowToMake() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.45 }}
-            className="flex flex-col items-center gap-5"
+            className="htm-hero-actions"
           >
             {/* Search Bar */}
-            <div className="relative w-full max-w-lg">
+            <div className="htm-search-wrapper">
               <Search
                 size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none"
+                className="icon"
               />
               <input
                 type="text"
@@ -563,12 +560,12 @@ export function HowToMake() {
                   document.getElementById("guides")?.scrollIntoView({ behavior: "smooth" });
                 }}
                 placeholder="Search recipes… e.g. rice, honey, ghee"
-                className="w-full pl-11 pr-10 py-4 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 text-white placeholder-white/50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/50 focus:bg-white/20 transition-all shadow-lg"
+                className="htm-search-input"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-white/20 text-white/70 transition-colors"
+                  className="htm-search-clear-btn"
                 >
                   <X size={15} />
                 </button>
@@ -580,7 +577,7 @@ export function HowToMake() {
               onClick={() =>
                 document.getElementById("guides")?.scrollIntoView({ behavior: "smooth" })
               }
-              className="bg-white text-green-700 hover:bg-green-50 font-extrabold rounded-full px-10 py-5 text-base shadow-xl shadow-black/20 transition-all hover:scale-105"
+              className="htm-explore-btn"
             >
               Explore Recipes
             </Button>
@@ -588,7 +585,7 @@ export function HowToMake() {
         </div>
 
         {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0 overflow-hidden leading-none">
+        <div className="htm-wave-divider">
           <svg viewBox="0 0 1440 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-14">
             <path d="M0,28 C360,56 1080,0 1440,28 L1440,56 L0,56 Z" fill="#f5f5f5" />
           </svg>
@@ -596,9 +593,9 @@ export function HowToMake() {
       </section>
 
       {/* ── Stats strip ───────────────────────────────────────────────── */}
-      <section className="bg-white border-b border-neutral-100">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-3 gap-4 text-center max-w-2xl mx-auto">
+      <section className="htm-stats-strip">
+        <div className="htm-stats-content">
+          <div className="htm-stats-grid">
             {[
               { value: `${howToGuides.length}+`, label: "Recipes" },
               { value: "100%", label: "Organic Ingredients" },
@@ -610,9 +607,10 @@ export function HowToMake() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.55 }}
+                className="htm-stat-item"
               >
-                <p className="text-3xl font-black text-green-600">{s.value}</p>
-                <p className="text-xs font-semibold text-neutral-500 mt-0.5">{s.label}</p>
+                <p className="value">{s.value}</p>
+                <p className="label">{s.label}</p>
               </motion.div>
             ))}
           </div>
@@ -621,15 +619,15 @@ export function HowToMake() {
 
       {/* ── Guide Cards ───────────────────────────────────────────────── */}
       <section id="guides" className="py-20">
-        <div className="container mx-auto px-4">
+        <div className="htm-guides-container">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-14"
+            className="htm-guides-header"
           >
-            <h2 className="text-4xl md:text-5xl font-black text-neutral-900 tracking-tight mb-3">
+            <h2 className="htm-guides-title">
               Browse Recipes
             </h2>
             <motion.div
@@ -637,9 +635,9 @@ export function HowToMake() {
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="w-20 h-1 bg-green-500 rounded-full mx-auto mb-4 origin-left"
+              className="htm-guides-underline"
             />
-            <p className="text-neutral-500 max-w-md mx-auto">
+            <p className="htm-guides-subtitle">
               Click any card to get full ingredients, step-by-step instructions, and pro tips.
             </p>
           </motion.div>
@@ -649,15 +647,15 @@ export function HowToMake() {
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 mb-8 justify-center"
+              className="htm-active-search"
             >
-              <span className="text-sm text-neutral-500">
+              <span className="text">
                 Showing results for{" "}
-                <span className="font-bold text-neutral-800">"{searchQuery}"</span>
+                <span className="query">"{searchQuery}"</span>
               </span>
               <button
                 onClick={() => setSearchQuery("")}
-                className="text-xs text-red-400 hover:text-red-600 font-semibold flex items-center gap-1 transition-colors"
+                className="clear-btn"
               >
                 <X size={12} /> Clear
               </button>
@@ -672,7 +670,7 @@ export function HowToMake() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="grid gap-7 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                className="htm-guides-grid"
               >
                 {filteredGuides.map((guide, i) => (
                   <motion.div
@@ -691,18 +689,18 @@ export function HowToMake() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="text-center py-20"
+                className="htm-empty-guides"
               >
-                <div className="size-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
-                  <Search size={28} className="text-green-300" />
+                <div className="icon-wrapper">
+                  <Search size={28} className="icon" />
                 </div>
-                <p className="text-xl font-extrabold text-neutral-700 mb-2">No recipes found</p>
-                <p className="text-neutral-400 text-sm mb-5">
+                <p className="title">No recipes found</p>
+                <p className="subtitle">
                   We couldn't find any guide matching "{searchQuery}".
                 </p>
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="text-sm font-bold text-green-600 hover:text-green-500 underline underline-offset-2 transition-colors"
+                  className="clear-search"
                 >
                   Clear search
                 </button>
@@ -747,7 +745,7 @@ export function HowToMake() {
             <p className="text-green-50/80 mb-10 max-w-lg mx-auto text-lg leading-relaxed">
               Subscribe for exclusive access to seasonal harvests, healthy living guides, and member-only benefits.
             </p>
-           <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row justify-center max-w-xl mx-auto gap-3">
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row justify-center max-w-xl mx-auto gap-3">
               <input
                 type="email"
                 required

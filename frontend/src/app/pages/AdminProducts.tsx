@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { toast } from "sonner";
+import "@/styles/AdminProducts.css";
 
 interface Product {
   id: string;
@@ -59,6 +60,7 @@ export function AdminProducts() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -158,6 +160,7 @@ export function AdminProducts() {
     setShowForm(false);
     setEditingProduct(null);
     setForm({ ...EMPTY_FORM });
+    setShowAddConfirm(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -166,6 +169,17 @@ export function AdminProducts() {
       toast.error("Name, price, and category are required.");
       return;
     }
+    
+    // For new products, trigger confirmation first
+    if (!editingProduct && !showAddConfirm) {
+      setShowAddConfirm(true);
+      return;
+    }
+
+    await executeSave();
+  };
+
+  const executeSave = async () => {
     setIsSaving(true);
     try {
       const body = {
@@ -193,6 +207,7 @@ export function AdminProducts() {
       toast.error(err.message || "Failed to save product.");
     } finally {
       setIsSaving(false);
+      setShowAddConfirm(false);
     }
   };
 
@@ -216,26 +231,26 @@ export function AdminProducts() {
   const isBase64Image = (src: string) => src.startsWith("data:");
 
   return (
-    <div className="space-y-6">
+    <div className="admin-products-container">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-black text-zinc-100 tracking-tight">Product Catalog</h2>
-          <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+      <div className="products-header">
+        <div className="products-title-group">
+          <h2 className="title">Product Catalog</h2>
+          <p className="subtitle">
             {products.length} products · changes go live instantly everywhere
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="header-actions">
           <button
             onClick={loadProducts}
-            className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+            className="refresh-btn-products"
             title="Refresh"
           >
             <RefreshCw size={16} />
           </button>
           <Button
             onClick={openAddForm}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest px-5 rounded-xl"
+            className="add-product-btn"
           >
             <Plus size={16} className="mr-1.5" />
             Add Product
@@ -244,101 +259,99 @@ export function AdminProducts() {
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+      <div className="search-wrapper-products">
+        <Search className="search-icon-products" size={16} />
         <input
           type="text"
           placeholder="Search products by name or category..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-zinc-950 border border-zinc-800 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-blue-500/50 transition-colors"
+          className="search-input-products"
         />
       </div>
 
       {/* Table */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-zinc-600 gap-3">
-          <RefreshCw size={28} className="animate-spin" />
-          <p className="text-xs font-bold uppercase tracking-widest text-zinc-700">Loading Products...</p>
+        <div className="loading-container-products">
+          <RefreshCw size={28} className="loading-spinner-products" />
+          <p className="loading-text-products">Loading Products...</p>
         </div>
       ) : (
-        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
-          <table className="w-full text-left">
+        <div className="products-table-wrapper">
+          <table className="products-table">
             <thead>
-              <tr className="bg-zinc-900/60 border-b border-zinc-800">
-                <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Product</th>
-                <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest hidden sm:table-cell">Category</th>
-                <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Price</th>
-                <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest hidden md:table-cell">Stock</th>
-                <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest text-right">Actions</th>
+              <tr>
+                <th>Product</th>
+                <th className="hidden sm:table-cell">Category</th>
+                <th>Price</th>
+                <th className="hidden md:table-cell">Stock</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-900">
+            <tbody>
               {filteredProducts.map(product => (
-                <tr key={product.id} className="hover:bg-zinc-900/30 transition-colors">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-12 rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden shrink-0 flex items-center justify-center">
+                <tr key={product.id} className="product-row">
+                  <td>
+                    <div className="product-info">
+                      <div className="product-image-container">
                         {product.image ? (
                           <img
                             src={product.image}
                             alt={product.name}
-                            className="size-full object-cover"
+                            className="product-image-table"
                             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                           />
                         ) : (
                           <ImageIcon size={16} className="text-zinc-700" />
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-zinc-200 truncate">{product.name}</p>
-                        <p className="text-[10px] text-zinc-600 truncate max-w-[180px]">{product.description}</p>
+                      <div className="product-text">
+                        <p className="product-name-table">{product.name}</p>
+                        <p className="product-desc-table">{product.description}</p>
                         {isBase64Image(product.image) && (
-                          <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Custom Image</span>
+                          <span className="custom-image-badge">Custom Image</span>
                         )}
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 hidden sm:table-cell">
-                    <span className="px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-[11px] font-bold text-zinc-400">
+                  <td className="hidden sm:table-cell">
+                    <span className="category-badge-table">
                       {product.category}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td>
                     {product.discountPrice ? (
                       <>
-                        <p className="text-sm font-black text-blue-400">${product.discountPrice.toFixed(2)} <span className="text-xs line-through text-zinc-500 font-normal">${product.price.toFixed(2)}</span></p>
-                        <p className="text-[10px] text-zinc-600">Rs {Math.round(product.discountPrice * 133).toLocaleString()}</p>
+                        <p><span className="price-discounted">${product.discountPrice.toFixed(2)}</span> <span className="price-original">${product.price.toFixed(2)}</span></p>
+                        <p className="price-npr">Rs {Math.round(product.discountPrice * 133).toLocaleString()}</p>
                       </>
                     ) : (
                       <>
-                        <p className="text-sm font-black text-blue-400">${product.price.toFixed(2)}</p>
-                        <p className="text-[10px] text-zinc-600">Rs {Math.round(product.price * 133).toLocaleString()}</p>
+                        <p className="price-discounted">${product.price.toFixed(2)}</p>
+                        <p className="price-npr">Rs {Math.round(product.price * 133).toLocaleString()}</p>
                       </>
                     )}
                   </td>
-                  <td className="p-4 hidden md:table-cell">
+                  <td className="hidden md:table-cell">
                     {product.inStock ? (
-                      <span className="flex items-center gap-1.5 text-[11px] font-black text-emerald-400 uppercase tracking-widest">
-                        <div className="size-1.5 bg-emerald-400 rounded-full animate-pulse" /></span>
+                      <span className="stock-indicator in-stock"><div className="stock-dot in-stock" />In Stock</span>
                     ) : (
-                      <span className="flex items-center gap-1.5 text-[11px] font-black text-red-400 uppercase tracking-widest">
-                        <div className="size-1.5 bg-red-400 rounded-full" />Out of Stock</span>
+                      <span className="stock-indicator out-of-stock"><div className="stock-dot out-of-stock" />Out of Stock</span>
                     )}
                   </td>
-                  <td className="p-4">
-                    <div className="flex gap-2 justify-end">
+                  <td>
+                    <div className="action-btn-group">
                       {deleteConfirmId === product.id ? (
                         <>
                           <button
                             onClick={() => handleDelete(product.id)}
-                            className="px-3 py-1.5 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg hover:bg-red-500 transition-colors"
+                            className="confirm-delete-btn"
                           >
                             Confirm Delete
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(null)}
-                            className="p-1.5 text-zinc-500 hover:text-zinc-200 transition-colors"
+                            className="cancel-delete-btn"
                           >
                             <X size={16} />
                           </button>
@@ -347,14 +360,14 @@ export function AdminProducts() {
                         <>
                           <button
                             onClick={() => openEditForm(product)}
-                            className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-blue-400 hover:border-blue-500/40 transition-colors"
+                            className="edit-btn"
                             title="Edit product"
                           >
                             <Pencil size={14} />
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(product.id)}
-                            className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/40 transition-colors"
+                            className="delete-btn"
                             title="Delete product"
                           >
                             <Trash2 size={14} />
@@ -368,9 +381,9 @@ export function AdminProducts() {
             </tbody>
           </table>
           {filteredProducts.length === 0 && (
-            <div className="p-16 text-center opacity-30">
-              <Package size={32} className="mx-auto mb-2 text-zinc-500" />
-              <p className="text-[11px] font-black uppercase tracking-widest text-zinc-500">
+            <div className="empty-products-container">
+              <Package size={32} className="icon" />
+              <p className="text">
                 {search ? "No products match your search" : "No products yet. Add one!"}
               </p>
             </div>
@@ -380,55 +393,55 @@ export function AdminProducts() {
 
       {/* Slide-in Form Panel */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/60 backdrop-blur-sm" onClick={closeForm} />
-          <div className="w-full max-w-lg bg-[#09090b] border-l border-zinc-800 overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-300">
+        <div className="form-panel-overlay">
+          <div className="form-panel-backdrop" onClick={closeForm} />
+          <div className="form-panel">
 
-            <div className="p-6 border-b border-zinc-800 flex items-center justify-between sticky top-0 bg-[#09090b] z-10">
+            <div className="form-header">
               <div>
-                <h3 className="text-base font-black text-zinc-100">
+                <h3 className="form-title">
                   {editingProduct ? "Edit Product" : "Add New Product"}
                 </h3>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                <p className="form-subtitle">
                   {editingProduct ? "Changes appear everywhere instantly" : "Will appear on homepage & checkout instantly"}
                 </p>
               </div>
-              <button onClick={closeForm} className="p-2 text-zinc-500 hover:text-white transition-colors rounded-lg hover:bg-zinc-800">
+              <button onClick={closeForm} className="close-form-btn">
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-5">
+            <form onSubmit={handleSave} className="product-form">
 
               {/* Name */}
-              <div>
-                <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">Product Name *</label>
+              <div className="form-group">
+                <label className="form-label">Product Name *</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Pure Raw Honey"
                   required
-                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors"
+                  className="form-input"
                 />
               </div>
 
               {/* Description */}
-              <div>
-                <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">Description</label>
+              <div className="form-group">
+                <label className="form-label">Description</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Short product description..."
                   rows={3}
-                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors resize-none"
+                  className="form-textarea"
                 />
               </div>
 
               {/* Price & Discount */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">Original Price (USD) *</label>
+              <div className="price-grid">
+                <div className="form-group">
+                  <label className="form-label">Original Price (USD) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -437,14 +450,14 @@ export function AdminProducts() {
                     onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
                     placeholder="0.00"
                     required
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors"
+                    className="form-input"
                   />
                   {form.price && (
-                    <p className="text-[10px] text-zinc-600 mt-1 font-mono">≈ Rs {Math.round(parseFloat(form.price || "0") * 133).toLocaleString()}</p>
+                    <p className="price-note">≈ Rs {Math.round(parseFloat(form.price || "0") * 133).toLocaleString()}</p>
                   )}
                 </div>
-                <div>
-                  <label className="text-[11px] font-black text-emerald-400 uppercase tracking-widest block mb-1.5">Discount Price (USD)</label>
+                <div className="form-group">
+                  <label className="form-label text-emerald-400">Discount Price (USD)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -452,17 +465,17 @@ export function AdminProducts() {
                     value={form.discountPrice}
                     onChange={e => setForm(f => ({ ...f, discountPrice: e.target.value }))}
                     placeholder="0.00 (Optional)"
-                    className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-emerald-500/60 transition-colors"
+                    className="form-input focus:border-emerald-500/60"
                   />
                   {form.discountPrice && (
-                    <p className="text-[10px] text-emerald-500 mt-1 font-mono">≈ Rs {Math.round(parseFloat(form.discountPrice || "0") * 133).toLocaleString()} (Discounted)</p>
+                    <p className="price-note discounted">≈ Rs {Math.round(parseFloat(form.discountPrice || "0") * 133).toLocaleString()} (Discounted)</p>
                   )}
                 </div>
               </div>
 
               {/* Category */}
-              <div>
-                <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">Category *</label>
+              <div className="form-group">
+                <label className="form-label">Category *</label>
                 <input
                   type="text"
                   value={form.category}
@@ -470,7 +483,7 @@ export function AdminProducts() {
                   placeholder="e.g. Honey"
                   required
                   list="category-suggestions"
-                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors"
+                  className="form-input"
                 />
                 <datalist id="category-suggestions">
                   <option value="Honey" />
@@ -481,8 +494,8 @@ export function AdminProducts() {
               </div>
 
               {/* ── Image Drag & Drop ────────────────────────────── */}
-              <div>
-                <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">
+              <div className="form-group">
+                <label className="form-label">
                   Product Image <span className="text-zinc-600 normal-case">(drag & drop or click)</span>
                 </label>
 
@@ -492,37 +505,32 @@ export function AdminProducts() {
                   onDragOver={onDragOver}
                   onDragLeave={onDragLeave}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`relative border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden
-                    ${isDragging
-                      ? "border-blue-500 bg-blue-500/10 scale-[1.01]"
-                      : "border-zinc-700 hover:border-zinc-500 bg-zinc-900/50 hover:bg-zinc-900"
-                    }`}
+                  className={`dropzone ${isDragging ? "dragging" : "not-dragging"}`}
                 >
                   {form.image ? (
-                    <div className="relative">
+                    <div className="dropzone-preview">
                       <img
                         src={form.image}
                         alt="Product preview"
-                        className="w-full h-48 object-cover"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="text-center text-white">
-                          <Upload size={24} className="mx-auto mb-1" />
-                          <p className="text-xs font-bold">Click or drop to replace</p>
+                      <div className="dropzone-preview-overlay">
+                        <div className="dropzone-preview-text">
+                          <Upload size={24} className="icon" />
+                          <p className="text">Click or drop to replace</p>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="py-10 flex flex-col items-center gap-3 text-zinc-500">
-                      <div className={`size-14 rounded-2xl flex items-center justify-center transition-colors ${isDragging ? "bg-blue-500/20 text-blue-400" : "bg-zinc-800 text-zinc-600"}`}>
+                    <div className="dropzone-placeholder">
+                      <div className="dropzone-placeholder-icon-wrapper">
                         <Upload size={24} />
                       </div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-zinc-400">
+                      <div className="dropzone-placeholder-text">
+                        <p className="title">
                           {isDragging ? "Drop image here!" : "Drag & drop your image"}
                         </p>
-                        <p className="text-xs text-zinc-600 mt-0.5">or click to browse · JPG, PNG, WEBP · max 5MB</p>
+                        <p className="subtitle">or click to browse · JPG, PNG, WEBP · max 5MB</p>
                       </div>
                     </div>
                   )}
@@ -536,25 +544,25 @@ export function AdminProducts() {
                 </div>
 
                 {/* OR: Manual URL input */}
-                <div className="flex items-center gap-3 mt-3">
-                  <div className="flex-1 h-px bg-zinc-800" />
-                  <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">or enter path</span>
-                  <div className="flex-1 h-px bg-zinc-800" />
+                <div className="image-url-separator">
+                  <div className="line" />
+                  <span className="text">or enter path</span>
+                  <div className="line" />
                 </div>
                 <input
                   type="text"
                   value={isBase64Image(form.image) ? "" : form.image}
                   onChange={e => setForm(f => ({ ...f, image: e.target.value }))}
                   placeholder="/images/honey_jar.png"
-                  className="w-full mt-3 px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors"
+                  className="form-input image-url-input"
                 />
                 {form.image && isBase64Image(form.image) && (
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-[10px] text-blue-400 font-bold">✓ Custom image uploaded — will appear on all pages</p>
+                  <div className="custom-image-info">
+                    <p className="text">✓ Custom image uploaded — will appear on all pages</p>
                     <button
                       type="button"
                       onClick={() => setForm(f => ({ ...f, image: "" }))}
-                      className="text-[10px] text-zinc-500 hover:text-white"
+                      className="remove-btn"
                     >
                       Remove
                     </button>
@@ -564,8 +572,8 @@ export function AdminProducts() {
               {/* ─────────────────────────────────────────────────── */}
 
               {/* Features */}
-              <div>
-                <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">
+              <div className="form-group">
+                <label className="form-label">
                   Features <span className="text-zinc-600 normal-case">(comma-separated)</span>
                 </label>
                 <input
@@ -573,44 +581,82 @@ export function AdminProducts() {
                   value={form.features}
                   onChange={e => setForm(f => ({ ...f, features: e.target.value }))}
                   placeholder="No added sugar, Rich in antioxidants, Organic"
-                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-blue-500/60 transition-colors"
+                  className="form-input"
                 />
               </div>
 
               {/* In Stock Toggle */}
-              <div className="flex items-center justify-between p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
-                <div>
-                  <p className="text-sm font-bold text-zinc-200">In Stock</p>
-                  <p className="text-[11px] text-zinc-500">Product is available for purchase</p>
+              <div className="in-stock-toggle">
+                <div className="text">
+                  <p className="title">In Stock</p>
+                  <p className="subtitle">Product is available for purchase</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setForm(f => ({ ...f, inStock: !f.inStock }))}
-                  className={`transition-colors ${form.inStock ? "text-emerald-400" : "text-zinc-600"}`}
+                  className={`toggle-btn ${form.inStock ? "on" : "off"}`}
                 >
                   {form.inStock ? <ToggleRight size={36} /> : <ToggleLeft size={36} />}
                 </button>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-2">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={closeForm}
-                  className="flex-1 py-3 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 text-sm font-bold transition-colors"
+                  className="cancel-btn"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-black uppercase tracking-wide transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="save-btn"
                 >
                   {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
                   {isSaving ? "Saving..." : editingProduct ? "Save Changes" : "Add Product"}
                 </button>
               </div>
             </form>
+
+            {/* Confirmation Modal */}
+            {showAddConfirm && (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div 
+                  className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+                  onClick={() => !isSaving && setShowAddConfirm(false)} 
+                />
+                <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative z-10 transform transition-all">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mb-4 mx-auto">
+                    <Package size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-900 mb-2 text-center">Confirm Product Addition</h4>
+                  <p className="text-gray-600 mb-6 text-center">
+                    Are you sure you want to add <strong>{form.name}</strong> to the catalog? It will be instantly visible to all users.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddConfirm(false)}
+                      className="px-6 py-2.5 rounded-xl text-gray-700 font-medium bg-gray-100 hover:bg-gray-200 transition-colors w-full"
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={executeSave}
+                      disabled={isSaving}
+                      className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 w-full"
+                    >
+                      {isSaving ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
+                      {isSaving ? "Saving..." : "Confirm"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

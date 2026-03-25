@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { 
-  Package, Truck, CheckCircle, Clock, ChevronRight, 
-  Search, RotateCcw, ListFilter, Activity, Zap, 
+import {
+  Package, Truck, CheckCircle, Clock, ChevronRight,
+  Search, RotateCcw, ListFilter, Activity, Zap,
   Bell, AlertCircle, Check, X, MapPin, RefreshCw
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -9,6 +9,7 @@ import { Checkbox } from "../components/ui/checkbox";
 import { getOrders, updateOrderStatus, clearOrders, Order } from "../utils/storage";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
+import "@/styles/AdminTracker.css";
 
 const statusLabels = [
   "Confirmed",
@@ -44,7 +45,7 @@ export function AdminTracker() {
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<number | "all" | "pending">("all");
-  const [activities, setActivities] = useState<{id: string, orderId: string, action: string, timestamp: string}[]>([]);
+  const [activities, setActivities] = useState<{ id: string, orderId: string, action: string, timestamp: string }[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +63,7 @@ export function AdminTracker() {
     setIsLoading(true);
     const freshOrders = await getOrders();
     const pendingOrders = freshOrders.filter(o => o.status === -1);
-    
+
     // Check if any new pending orders arrived
     if (freshOrders.length > orders.length && pendingOrders.length > 0) {
       playNotification(pendingOrders.length, pendingOrders[0]);
@@ -75,12 +76,12 @@ export function AdminTracker() {
   useEffect(() => {
     loadOrders();
     window.addEventListener('storage', loadOrders);
-    
+
     let interval: any;
     if (autoRefresh) {
-      interval = setInterval(loadOrders, 5000); 
+      interval = setInterval(loadOrders, 5000);
     }
-    
+
     return () => {
       window.removeEventListener('storage', loadOrders);
       if (interval) clearInterval(interval);
@@ -89,8 +90,8 @@ export function AdminTracker() {
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
-      const matchesSearch = order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           order.id.includes(searchQuery);
+      const matchesSearch = order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.id.includes(searchQuery);
       if (statusFilter === "all") return matchesSearch;
       if (statusFilter === "pending") return matchesSearch && order.status === -1;
       return matchesSearch && order.status === statusFilter;
@@ -100,7 +101,7 @@ export function AdminTracker() {
   const handleUpdateStatus = async (orderIds: string[], newStatus: number) => {
     const timestamp = new Date().toLocaleTimeString();
     await Promise.all(orderIds.map(id => updateOrderStatus(id, newStatus)));
-    
+
     const newItems = orderIds.map(id => ({
       id: Math.random().toString(36).substr(2, 9),
       orderId: id,
@@ -115,40 +116,40 @@ export function AdminTracker() {
   const pendingCount = orders.filter(o => o.status === -1).length;
 
   return (
-    <div className="space-y-6">
+    <div className="admin-tracker-container">
       {/* Dynamic Notification Banner */}
       {pendingCount > 0 && (
-        <div className="bg-blue-600/20 border border-blue-500/30 p-4 rounded-2xl flex items-center justify-between animate-pulse">
-          <div className="flex items-center gap-3">
-            <div className="size-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/40">
-              <Bell className="text-white animate-bounce" size={20} />
+        <div className="notification-banner">
+          <div className="notification-content">
+            <div className="notification-icon-wrapper">
+              <Bell className="notification-icon" size={20} />
             </div>
-            <div>
-              <p className="text-sm font-bold text-white tracking-tight">{pendingCount} New Purchase Inbound</p>
-              <p className="text-[10px] text-blue-300 font-black uppercase tracking-widest">Awaiting Admin Clearance</p>
+            <div className="notification-text">
+              <p className="title">{pendingCount} New Purchase Inbound</p>
+              <p className="subtitle">Awaiting Admin Clearance</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+          <div className="notification-actions">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setStatusFilter("pending")}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-[10px] font-black uppercase tracking-widest"
+              className="review-dispatch-btn"
             >
               Review Dispatch
             </Button>
-            <div className="h-6 w-px bg-zinc-800 mx-2"></div>
-            <div className="flex items-center gap-2">
-              <button 
+            <div className="actions-separator"></div>
+            <div className="auto-sync-wrapper">
+              <button
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${autoRefresh ? 'bg-blue-600/10 border-blue-500/30 text-blue-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
+                className={`auto-sync-btn ${autoRefresh ? 'active' : 'inactive'}`}
               >
-                <div className={`size-1.5 rounded-full ${autoRefresh ? 'bg-blue-500 animate-pulse' : 'bg-zinc-700'}`}></div>
-                <span className="text-[9px] font-black uppercase tracking-widest">Auto-Sync</span>
+                <div className={`sync-indicator ${autoRefresh ? 'active' : 'inactive'}`}></div>
+                <span className="auto-sync-label">Auto-Sync</span>
               </button>
-              <button 
+              <button
                 onClick={loadOrders}
-                className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white transition-colors"
+                className="refresh-btn"
                 title="Manual Refresh"
               >
                 <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
@@ -158,15 +159,15 @@ export function AdminTracker() {
         </div>
       )}
 
-      <div className="flex items-center justify-between text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+      <div className="telemetry-bar">
         <span>Active Telemetry</span>
-        <span className="flex items-center gap-1.5 text-[10px]">
+        <span className="last-updated">
           Last Updated: {lastRefreshed.toLocaleTimeString()}
         </span>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="stats-grid">
         <MiniStat label="Pending Intake" value={pendingCount} icon={Bell} trend={pendingCount > 0 ? "Urgent" : "Clear"} color={pendingCount > 0 ? "text-amber-500" : "text-zinc-500"} />
         <MiniStat label="Out for Delivery" value={orders.filter(o => o.status === 2).length} icon={Truck} trend="Stable" color="text-blue-500" />
         <MiniStat label="Completed Orders" value={orders.filter(o => o.status === 3).length} icon={CheckCircle} trend="+8 today" color="text-emerald-500" />
@@ -174,19 +175,19 @@ export function AdminTracker() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between shadow-2xl">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search Deployment ID..." 
+      <div className="filter-bar">
+        <div className="search-and-filter">
+          <div className="search-group">
+            <Search className="search-icon" size={16} />
+            <input
+              type="text"
+              placeholder="Search Deployment ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs outline-none text-zinc-300 font-mono"
+              className="search-input-tracker"
             />
           </div>
-          <div className="flex items-center gap-1.5 p-1 bg-zinc-950 border border-zinc-800 rounded-xl overflow-x-auto">
+          <div className="filter-pills">
             <FilterButton active={statusFilter === "all"} onClick={() => setStatusFilter("all")} label="All" />
             <FilterButton active={statusFilter === "pending"} onClick={() => setStatusFilter("pending")} label={`Pending (${pendingCount})`} highlight={pendingCount > 0} />
             {statusLabels.map((l, i) => (
@@ -195,85 +196,85 @@ export function AdminTracker() {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="filter-actions">
           {selectedOrderIds.length > 0 && (
-            <div className="flex gap-1.5 animate-in slide-in-from-right-2">
-              <Button size="sm" onClick={() => handleUpdateStatus(selectedOrderIds, 0)} className="bg-blue-600 text-white text-[10px] font-black uppercase">Accept Selected</Button>
+            <div className="selected-actions">
+              <Button size="sm" onClick={() => handleUpdateStatus(selectedOrderIds, 0)} className="accept-selected-btn">Accept Selected</Button>
             </div>
           )}
-          <Button variant="ghost" size="sm" onClick={async () => { await clearOrders(); loadOrders(); }} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">
+          <Button variant="ghost" size="sm" onClick={async () => { await clearOrders(); loadOrders(); }} className="reset-all-btn">
             <RotateCcw size={14} className="mr-2" /> Reset All
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
-            <table className="w-full text-left">
+      <div className="main-grid-tracker">
+        <div className="orders-table-container">
+          <div className="orders-table-wrapper">
+            <table className="orders-table">
               <thead>
-                <tr className="bg-zinc-900/50 border-b border-zinc-800">
-                  <th className="p-4 w-12 text-center">
+                <tr>
+                  <th className="w-12 text-center">
                     <Checkbox
                       checked={selectedOrderIds.length > 0 && selectedOrderIds.length === filteredOrders.length}
                       onCheckedChange={() => setSelectedOrderIds(selectedOrderIds.length === filteredOrders.length ? [] : filteredOrders.map(o => o.id))}
                     />
                   </th>
-                  <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Deployment</th>
-                  <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Personnel</th>
-                  <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Current State</th>
-                  <th className="p-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest">Review</th>
+                  <th>Deployment</th>
+                  <th>Personnel</th>
+                  <th>Current State</th>
+                  <th>Review</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-900">
+              <tbody>
                 {filteredOrders.map((order) => {
                   const isSelected = selectedOrderIds.includes(order.id);
                   const isPending = order.status === -1;
                   return (
-                    <tr key={order.id} className={`hover:bg-zinc-900/40 transition-colors ${isSelected ? "bg-blue-500/5" : ""} ${isPending ? "border-l-2 border-amber-500" : ""}`}>
-                      <td className="p-4 text-center">
+                    <tr key={order.id} className={`order-row ${isSelected ? "selected" : ""} ${isPending ? "pending" : ""}`}>
+                      <td className="text-center">
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={() => setSelectedOrderIds(prev => prev.includes(order.id) ? prev.filter(i => i !== order.id) : [...prev, order.id])}
                         />
                       </td>
-                      <td className="p-4">
-                        <p className="font-mono text-xs font-bold text-zinc-300">#ORD-{order.id}</p>
-                        <p className="text-[10px] text-zinc-600 mt-1 font-mono">{order.timestamp}</p>
+                      <td>
+                        <p className="order-id">#ORD-{order.id}</p>
+                        <p className="order-timestamp">{order.timestamp}</p>
                       </td>
-                      <td className="p-4">
-                        <p className="text-xs font-bold text-zinc-400">{order.customerName}</p>
-                        <p className="text-[10px] text-zinc-600 line-clamp-1">{order.productName}</p>
-                        <div className="mt-1 flex items-center gap-1 text-[9px] text-zinc-500 font-medium">
-                          <MapPin size={10} className="text-blue-500/50" />
+                      <td>
+                        <p className="personnel-name">{order.customerName}</p>
+                        <p className="product-name">{order.productName}</p>
+                        <div className="address-info">
+                          <MapPin size={10} className="icon" />
                           <span className="line-clamp-1">{order.address}</span>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${statusColors[order.status]}`}>
+                      <td>
+                        <div className={`status-badge ${statusColors[order.status]}`}>
                           {isPending ? <AlertCircle size={12} className="animate-pulse" /> : <Zap size={12} />}
                           {isPending ? "Pending CLEARANCE" : statusLabels[order.status]}
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
+                      <td>
+                        <div className="review-actions">
                           {isPending ? (
-                            <div className="flex gap-2 min-w-[140px]">
-                              <button 
+                            <div className="pending-actions">
+                              <button
                                 onClick={() => handleUpdateStatus([order.id], 0)}
-                                className="flex-1 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-900/40 text-[10px] font-black uppercase tracking-widest border border-blue-400/30 active:scale-95"
+                                className="confirm-btn"
                               >
                                 Confirm
                               </button>
-                              <button 
-                                onClick={() => handleUpdateStatus([order.id], -2)} 
-                                className="px-3 py-1.5 bg-zinc-900 text-zinc-500 rounded-lg hover:bg-zinc-800 hover:text-zinc-300 transition-colors text-[10px] font-black uppercase border border-zinc-800"
+                              <button
+                                onClick={() => handleUpdateStatus([order.id], -2)}
+                                className="reject-btn"
                               >
                                 Reject
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center p-1 bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden self-start">
+                            <div className="status-stepper">
                               {statusLabels.map((label, idx) => {
                                 const isCurrent = order.status === idx;
                                 const isPast = order.status > idx;
@@ -281,13 +282,7 @@ export function AdminTracker() {
                                   <button
                                     key={idx}
                                     onClick={() => handleUpdateStatus([order.id], idx)}
-                                    className={`relative z-10 px-2 py-1 text-[8px] font-black uppercase tracking-tighter transition-all whitespace-nowrap border-r last:border-r-0 border-zinc-800/50
-                                      ${isCurrent 
-                                        ? "bg-blue-600 text-white shadow-xl shadow-blue-900/20" 
-                                        : isPast 
-                                          ? "text-blue-500/20 text-blue-400/60" 
-                                          : "text-zinc-700 hover:text-zinc-400"
-                                      }`}
+                                    className={`step-btn ${isCurrent ? "current" : isPast ? "past" : "future"}`}
                                     title={label}
                                   >
                                     {label.slice(0, 4)}
@@ -296,9 +291,9 @@ export function AdminTracker() {
                               })}
                             </div>
                           )}
-                          <button 
+                          <button
                             onClick={() => window.open(`/tracking/${order.id}`, '_blank')}
-                            className="p-2 text-zinc-600 hover:text-blue-500 hover:bg-zinc-800 rounded-lg transition-colors"
+                            className="open-customer-view-btn"
                             title="Open Customer View"
                           >
                             <ChevronRight size={16} />
@@ -311,7 +306,7 @@ export function AdminTracker() {
               </tbody>
             </table>
             {filteredOrders.length === 0 && (
-              <div className="p-12 text-center opacity-30">
+              <div className="empty-table-state">
                 <Activity size={32} className="mx-auto mb-2" />
                 <p className="text-[10px] font-black uppercase tracking-widest">No Active Telemetry</p>
               </div>
@@ -320,23 +315,23 @@ export function AdminTracker() {
         </div>
 
         {/* Sidebar Stream */}
-        <div className="space-y-6">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 shadow-2xl">
-            <h3 className="text-[10px] font-black text-zinc-100 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-              <ListFilter size={14} className="text-blue-500" />
+        <div className="activity-log-sidebar">
+          <div className="activity-log-card">
+            <h3 className="activity-log-title">
+              <ListFilter size={14} className="icon" />
               Pulse Log
             </h3>
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar-dark">
+            <div className="activity-log-list custom-scrollbar-dark">
               {activities.map((activity) => (
-                <div key={activity.id} className="relative pl-4 border-l border-zinc-800 pb-3">
-                  <div className="absolute -left-[5px] top-1.5 size-2 bg-blue-500/20 border border-blue-500/40 rounded-full"></div>
-                  <p className="text-[10px] font-bold text-zinc-600 tracking-wider mb-1 font-mono">{activity.timestamp}</p>
-                  <p className="text-[11px] text-zinc-400 leading-tight">
-                    <span className="text-blue-500">#{activity.orderId}</span> {activity.action}
+                <div key={activity.id} className="activity-item">
+                  <div className="activity-dot"></div>
+                  <p className="activity-timestamp">{activity.timestamp}</p>
+                  <p className="activity-text">
+                    <span className="order-id-log">#{activity.orderId}</span> {activity.action}
                   </p>
                 </div>
               ))}
-              {activities.length === 0 && <p className="text-[10px] text-zinc-700 text-center py-8 font-black uppercase tracking-widest">Stream Empty</p>}
+              {activities.length === 0 && <p className="empty-log-state">Stream Empty</p>}
             </div>
           </div>
         </div>
@@ -347,24 +342,22 @@ export function AdminTracker() {
 
 function MiniStat({ label, value, icon: Icon, trend, color }: any) {
   return (
-    <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-2xl">
-      <div className="flex justify-between items-start mb-2">
-        <div className={`p-2 rounded-xl bg-zinc-900 border border-zinc-800 ${color}`}><Icon size={18} /></div>
-        <span className="text-[10px] font-black uppercase text-zinc-500">{trend}</span>
+    <div className="mini-stat-card">
+      <div className="stat-header">
+        <div className={`stat-icon-wrapper ${color}`}><Icon size={18} /></div>
+        <span className="stat-trend">{trend}</span>
       </div>
-      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-xl font-bold text-zinc-100">{value}</p>
+      <p className="stat-label">{label}</p>
+      <p className="stat-value">{value}</p>
     </div>
   );
 }
 
 function FilterButton({ active, onClick, label, highlight }: any) {
   return (
-    <button 
+    <button
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-        active ? "bg-zinc-800 text-blue-500" : highlight ? "text-amber-500 animate-pulse" : "text-zinc-600 hover:text-zinc-400"
-      }`}
+      className={`filter-btn ${active ? "active" : ""} ${highlight ? "highlight" : ""}`}
     >
       {label}
     </button>

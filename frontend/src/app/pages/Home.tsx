@@ -4,10 +4,15 @@ import { Product } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "../components/ui/button";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { Leaf, Award, Recycle, ChevronDown, Loader2, Send, Search, AlertCircle, User as UserIcon, LogOut, ArrowRight, ShoppingBag } from "lucide-react";
+import { Leaf, Award, Recycle, ChevronDown, Loader2, Send, Search, AlertCircle, Star, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../AuthProvider";
 import { Link } from "react-router";
+import { WelcomePopup } from "../components/WelcomePopup";
+import "@/styles/ui styles/WelcomePopup.css";
+
+import "@/styles/Home.css";
+
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
@@ -199,15 +204,15 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-neutral-50"
+      className="home-container"
     >
       {/* ... (Hero section remains unchanged) */}
-      <section className="relative text-white min-h-[95vh] flex items-center justify-center overflow-hidden">
+      <section className="hero-section">
 
         {/* Parallax Background */}
         <motion.div
           style={{ y: backgroundY }}
-          className="absolute inset-0 z-0 origin-top h-[125%]"
+          className="hero-parallax-bg"
         >
           <motion.div
             initial={{ scale: 1.1, filter: "blur(12px)" }}
@@ -219,26 +224,26 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
               scale: { duration: 24, repeat: Infinity, ease: "easeInOut" },
               filter: { duration: 1.5, ease: "easeOut" }
             }}
-            className="w-full h-full origin-center relative"
+            className="hero-image-container"
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-black/80 z-10" />
+            <div className="hero-gradient-overlay" />
 
             {/* Animated Ambient Sunlight */}
             <motion.div
               animate={{ opacity: [0.1, 0.25, 0.1], scale: [1, 1.1, 1], x: [0, 40, 0] }}
               transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-yellow-200/30 rounded-full blur-[120px] mix-blend-overlay z-10 pointer-events-none"
+              className="hero-ambient-blob-1"
             />
             <motion.div
               animate={{ opacity: [0.15, 0.3, 0.15], scale: [1, 1.2, 1], x: [0, -30, 0] }}
               transition={{ duration: 28, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-              className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-green-300/20 rounded-full blur-[100px] mix-blend-overlay z-10 pointer-events-none"
+              className="hero-ambient-blob-2"
             />
 
             <img
               src="/images/organic_hero.png"
               alt="Organic Farm"
-              className="w-full h-full object-cover object-top"
+              className="hero-image"
             />
           </motion.div>
         </motion.div>
@@ -259,14 +264,14 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
         {/* Hero Content */}
         <motion.div
           style={{ opacity: heroOpacity, scale: heroScale }}
-          className="container mx-auto px-4 z-20 text-center flex flex-col items-center mt-12"
+          className="hero-content"
         >
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-            className="mb-7"
+            className="hero-badge-wrapper"
           >
             <motion.span
               animate={{
@@ -277,16 +282,16 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 ]
               }}
               transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-              className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-white/10 backdrop-blur-md border border-yellow-400/40 text-xs font-bold tracking-[0.2em] uppercase text-yellow-50"
+              className="hero-badge"
             >
               <motion.span
                 animate={{ rotate: [0, 18, -8, 0] }}
                 transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1.2 }}
-                className="flex"
+                className="hero-badge-icon"
               >
-                <Leaf size={13} className="text-yellow-400" />
+                <Leaf size={13} className="hero-badge-leaf" />
               </motion.span>
-              100% Pure &amp; Natural
+              100% Pure & Natural
             </motion.span>
           </motion.div>
 
@@ -295,14 +300,14 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             initial={{ opacity: 0, y: 60 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
-            className="text-5xl lg:text-7xl xl:text-8xl mb-7 font-black tracking-tighter leading-[1.05] max-w-5xl text-white"
+            className="hero-headline"
           >
             Purity You Can{" "}
             <motion.span
               variants={typingContainer}
               initial="hidden"
               animate="visible"
-              className="font-serif italic font-normal inline-flex text-yellow-400"
+              className="hero-headline-italic"
             >
               {"Trust".split("").map((char, index) => (
                 <motion.span key={index} variants={typingLetter}>{char}</motion.span>
@@ -314,7 +319,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
               variants={typingContainer}
               initial="hidden"
               animate="visible"
-              className="font-serif italic font-normal inline-flex text-yellow-400"
+              className="hero-headline-italic"
             >
               {"Taste".split("").map((char, index) => (
                 <motion.span key={index} variants={typingLetter}>{char}</motion.span>
@@ -328,7 +333,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.55 }}
-            className="text-lg md:text-xl text-neutral-200/90 max-w-2xl font-light mb-12 leading-relaxed"
+            className="hero-subheadline"
           >
             Ethically sourced, sustainably grown, and delivered fresh to your door.
           </motion.p>
@@ -338,7 +343,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.7 }}
-            className="flex flex-col items-center gap-5"
+            className="hero-cta-container"
           >
             <motion.div
               whileHover={{ scale: 1.07 }}
@@ -347,7 +352,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
               <Button
                 size="lg"
                 onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
-                className="bg-green-600 hover:bg-green-500 text-white rounded-full px-12 py-7 text-lg font-bold tracking-wide shadow-xl shadow-green-900/40 transition-all hover:shadow-green-700/50"
+                className="hero-cta-button"
               >
                 Explore Collection
               </Button>
@@ -355,7 +360,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             <motion.div
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-              className="text-white/40"
+              className="hero-scroll-indicator"
             >
               <ChevronDown size={22} />
             </motion.div>
@@ -367,38 +372,40 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
           initial={{ opacity: 0, x: -60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute left-6 bottom-28 z-30 hidden lg:block"
+          className="floating-badge-left"
         >
           <motion.div
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-4 shadow-2xl"
+            className="floating-badge-content"
           >
-            <div className="flex items-center gap-3">
-              <div className="size-11 rounded-xl bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center text-xl">
-                🍯
+            <div className="badge-item-row">
+              <div className="badge-icon-wrapper badge-icon-honey text-yellow-600">
+                <Sparkles size={18} />
               </div>
               <div>
                 <motion.p
-                  className="text-2xl font-black text-white leading-none"
+                  className="badge-title"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.8 }}
                 >
                   <CounterDisplay end={5000} duration={2.5} />
                 </motion.p>
-                <p className="text-[11px] text-white/60 font-bold uppercase tracking-widest mt-0.5">Happy Customers</p>
+                <p className="badge-subtitle">Happy Customers</p>
               </div>
             </div>
-            <div className="mt-3 flex gap-4">
+            <div className="badge-stars-container">
               {[...Array(5)].map((_, i) => (
                 <motion.div
                   key={i}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 2 + i * 1.1, type: "spring" }}
-                  className="text-yellow-400 text-sm"
-                >⭐</motion.div>
+                  className="badge-star text-yellow-400"
+                >
+                  <Star size={14} fill="currentColor" />
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -409,31 +416,31 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
           initial={{ opacity: 0, x: 60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute right-6 bottom-32 z-30 hidden lg:block"
+          className="floating-badge-right"
         >
           <motion.div
             animate={{ y: [0, -12, 0] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-4 shadow-2xl"
+            className="floating-badge-content"
           >
-            <div className="flex items-center gap-3">
-              <div className="size-11 rounded-xl bg-green-400/20 border border-green-400/30 flex items-center justify-center text-xl">
-                🌿
+            <div className="badge-item-row">
+              <div className="badge-icon-wrapper badge-icon-leaf text-green-600">
+                <Leaf size={18} />
               </div>
               <div>
-                <p className="text-sm font-black text-white leading-tight">100% Organic</p>
-                <p className="text-[11px] text-white/60 font-bold uppercase tracking-widest">Certified</p>
+                <p className="badge-title-sm">100% Organic</p>
+                <p className="badge-subtitle">Certified</p>
               </div>
             </div>
-            <div className="mt-3 h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div className="badge-progress-container">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: "100%" }}
                 transition={{ duration: 1.5, delay: 2, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-green-400 to-emerald-300 rounded-full"
+                className="badge-progress-bar"
               />
             </div>
-            <p className="text-[10px] text-green-300/80 font-bold mt-1.5 uppercase tracking-widest">Purity Verified</p>
+            <p className="badge-verified-text">Purity Verified</p>
           </motion.div>
         </motion.div>
 
@@ -445,24 +452,22 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
         whileInView="visible"
         viewport={{ once: true, margin: "-80px" }}
         variants={staggerContainer}
-        className="bg-white py-12 shadow-2xl shadow-neutral-200/60 relative z-30 -mt-20 mx-3 md:mx-auto max-w-6xl rounded-[2.5rem] border border-neutral-100/60 overflow-hidden"
+        className="features-section"
       >
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-green-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-neutral-100 relative z-10 px-4">
+        <div className="features-bg-blob" />
+        <div className="features-grid">
           {features.map((f) => (
             <motion.div
               key={f.title}
               variants={smoothReveal}
               whileHover={{ scale: 1.03, backgroundColor: "rgba(0, 240, 72, 0.5)" }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className="flex gap-5 items-start p-6 md:px-10 rounded-3xl cursor-default transition-colors"
+              className="feature-item"
             >
-              <div className="bg-green-100/80 p-4 rounded-2xl text-green-700 shrink-0 border border-green-200/50 shadow-sm">
-                {f.icon}
-              </div>
+              <div className="feature-icon-wrapper">{f.icon}</div>
               <div>
-                <h4 className="font-extrabold text-neutral-900 text-base mb-1">{f.title}</h4>
-                <p className="text-sm text-neutral-500 leading-relaxed">{f.desc}</p>
+                <h4 className="feature-title">{f.title}</h4>
+                <p className="feature-description">{f.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -470,97 +475,101 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
       </motion.section>
 
       {/* ── PRODUCT SECTION ──────────────────────────── */}
-      <section id="products" className="py-24">
-        <div className="container mx-auto px-4">
+      <section id="products" className="products-section">
+        <div className="products-container">
 
           {/* Section Header */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={smoothReveal}
-            className="flex flex-col items-center text-center mb-14"
+            className="products-header"
           >
-            <motion.h2
-              className="text-4xl md:text-5xl font-black text-neutral-900 mb-4 tracking-tight"
-            >
-              Danphe Organic
-            </motion.h2>
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-              className="w-24 h-1 bg-green-500 rounded-full mb-10 origin-left"
-            />
+            <div className="products-header-top">
+              <div className="products-title-group">
+                <motion.h2 className="products-title">
+                  Danphe Organic
+                </motion.h2>
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+                  className="products-title-underline"
+                />
+              </div>
 
-            {/* Search Bar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="relative w-full max-w-md mx-auto mb-8"
-            >
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products…"
-                className="w-full pl-11 pr-4 py-3 rounded-full border border-neutral-200 bg-white shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-xs font-medium"
+              <div className="products-controls-group">
+                {/* Search Bar */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="search-bar-wrapper"
                 >
-                  ✕
-                </button>
-              )}
-            </motion.div>
-
-            {/* Category Pills */}
-            <div className="flex gap-2.5 overflow-x-auto pb-2 w-full justify-start md:justify-center no-scrollbar px-2">
-              {categories.map((category) => (
-                <motion.button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  whileTap={{ scale: 0.93 }}
-                  layout
-                  className={`relative px-7 py-3 rounded-full text-sm font-bold whitespace-nowrap transition-colors duration-200 ${selectedCategory === category
-                    ? "text-white shadow-lg shadow-green-900/20"
-                    : "text-neutral-600 hover:text-green-700 hover:bg-green-50 bg-white border border-neutral-200 shadow-sm"
-                    }`}
-                >
-                  {selectedCategory === category && (
-                    <motion.div
-                      layoutId="activeCategory"
-                      className="absolute inset-0 bg-green-600 rounded-full z-0"
-                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                    />
+                  <Search className="search-bar-icon" size={18} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products…"
+                    className="search-input"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="search-clear-button"
+                    >
+                      <X size={14} />
+                    </button>
                   )}
-                  <span className="relative z-10">{category}</span>
-                </motion.button>
-              ))}
+                </motion.div>
+
+                {/* Category Pills */}
+                <div className="category-pills-container">
+                  {categories.map((category) => (
+                    <motion.button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      whileTap={{ scale: 0.93 }}
+                      layout
+                      className={`category-pill ${selectedCategory === category
+                        ? "active"
+                        : "inactive"
+                        }`}
+                    >
+                      {selectedCategory === category && (
+                        <motion.div
+                          layoutId="activeCategory"
+                          className="category-pill-bg"
+                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                        />
+                      )}
+                      <span className="category-pill-text">{category}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
             </div>
           </motion.div>
 
           {/* Products Grid */}
           {/* Loading State */}
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4 text-green-600">
+            <div className="loading-spinner-container">
               <Loader2 className="animate-spin" size={48} />
-              <p className="text-neutral-500 text-sm font-medium">Loading products…</p>
+              <p className="loading-spinner-text">Loading products…</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
-                <AlertCircle size={32} className="text-red-400" />
+            <div className="error-container">
+              <div className="error-icon-wrapper">
+                <AlertCircle size={32} className="error-icon" />
               </div>
-              <p className="text-neutral-600 font-semibold text-lg">Connection Error</p>
-              <p className="text-neutral-400 text-sm text-center max-w-xs">{error}</p>
+              <p className="error-title">Connection Error</p>
+              <p className="error-message">{error}</p>
               <Button
                 variant="outline"
                 onClick={() => window.location.reload()}
-                className="mt-2 border-red-200 text-red-500 hover:bg-red-50"
+                className="error-retry-button"
               >
                 Try Again
               </Button>
@@ -576,7 +585,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                     exit={{ opacity: 0, y: 10 }}
                     variants={staggerContainer}
                     layout
-                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-7"
+                    className="products-grid"
                   >
                     {filteredProducts.map((product) => (
                       <motion.div
@@ -584,10 +593,10 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                         variants={cardVariant}
                         whileHover={{ y: -8, scale: 1.02 }}
                         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                        className="h-full flex relative group hover:shadow-[0_20px_40px_-15px_rgba(74,222,128,0.25)] hover:z-10 rounded-2xl transition-shadow duration-300"
+                        className="product-card-container"
                         layout
                       >
-                        <div className="w-full">
+                        <div className="product-card-inner">
                           <ProductCard
                             product={product}
                             onAddToCart={onAddToCart}
@@ -605,7 +614,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-center py-20 text-neutral-400 text-lg font-medium"
+                  className="no-products-found"
                 >
                   No products found.
                 </motion.div>
@@ -621,36 +630,36 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
         whileInView="visible"
         viewport={{ once: true, margin: "-60px" }}
         variants={smoothReveal}
-        className="relative bg-[#062c16] py-24 overflow-hidden"
+        className="newsletter-section"
       >
         {/* Glowing orbs (lite green colors) */}
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="newsletter-blobs-container">
           <motion.div
             animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-[-10%] right-[10%] w-[32rem] h-[32rem] bg-green-400 rounded-full blur-[120px]"
+            className="newsletter-blob-1"
           />
           <motion.div
             animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.2, 0.1] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-            className="absolute bottom-[-10%] left-[10%] w-[36rem] h-[36rem] bg-emerald-400/80 rounded-full blur-[120px]"
+            className="newsletter-blob-2"
           />
         </div>
 
-        <div className="container mx-auto px-4 relative z-10 text-center">
+        <div className="newsletter-content">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
           >
-            <h2 className="text-4xl md:text-5xl font-black mb-5 text-white tracking-tight">
+            <h2 className="newsletter-title">
               Join the Organic Movement
             </h2>
-            <p className="text-green-50/80 mb-10 max-w-lg mx-auto text-lg leading-relaxed">
+            <p className="newsletter-description">
               Subscribe for exclusive access to seasonal harvests, healthy living guides, and member-only benefits.
             </p>
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row justify-center max-w-xl mx-auto gap-3">
+            <form onSubmit={handleSubscribe} className="newsletter-form">
               <input
                 type="email"
                 required
@@ -658,22 +667,22 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="Enter your email address"
                 disabled={isSubscribing}
-                className="px-6 py-4 bg-white/[0.08] border border-green-400/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:bg-white/[0.12] text-white placeholder-green-100/50 flex-1 transition-all shadow-sm backdrop-blur-md disabled:opacity-50"
+                className="newsletter-input"
               />
               <Button
                 type="submit"
                 disabled={isSubscribing}
-                className="bg-green-500 hover:bg-green-400 text-green-950 rounded-xl px-8 py-6 font-extrabold shadow-lg shadow-green-500/20 shrink-0 transition-transform hover:scale-105 disabled:hover:scale-100"
+                className="newsletter-button"
               >
                 {isSubscribing ? (
                   <Loader2 className="animate-spin" />
                 ) : (
-                  <>Subscribe Now <Send size={18} className="ml-2" /></>
+                  <>Subscribe Now <Send size={18} className="newsletter-button-icon" /></>
                 )}
               </Button>
             </form>
           </motion.div>
-          <div className="mt-20 pt-8 border-t border-green-800/40 text-sm text-green-300/50 font-medium">
+          <div className="footer-text">
             © {new Date().getFullYear()} Danphe Organic. All rights reserved. Crafted carefully for nature.
           </div>
         </div>
