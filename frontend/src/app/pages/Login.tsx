@@ -44,20 +44,42 @@ export function LoginPage() {
     onError: () => toast.error("Google login failed."),
   });
 
-  const responseFacebook = (response: any) => {
-    if (response.accessToken) {
-      toast.promise(
-        loginWithSocial("facebook", response.accessToken, response.name || "Facebook User", response.email || "fb-user@example.com"),
-        {
-          loading: 'Authenticating with Facebook...',
-          success: 'Welcome back through Facebook! 🌿',
-          error: 'Facebook login failed.',
-        }
-      );
-    } else {
-      toast.error("Facebook login failed or was cancelled.");
-    }
+  const handleFacebookLogin = () => {
+    const appId = import.meta.env.VITE_FACEBOOK_APP_ID || "123456789";
+    const redirectUri = window.location.origin + "/login";
+    const state = Math.random().toString(36).substring(7);
+    
+    // Store state for verification
+    localStorage.setItem('fb_auth_state', state);
+
+    const facebookUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=email,public_profile&response_type=token`;
+    
+    window.location.href = facebookUrl;
   };
+
+  // Handle Facebook Auth Token if redirected back
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("access_token")) {
+      const params = new URLSearchParams(hash.replace("#", "?"));
+      const accessToken = params.get("access_token");
+      const state = params.get("state");
+      const savedState = localStorage.getItem('fb_auth_state');
+
+      if (accessToken && state === savedState) {
+        toast.promise(
+          loginWithSocial("facebook", accessToken, "Facebook User", "fb-user@example.com"),
+          {
+            loading: 'Authenticating with Facebook...',
+            success: 'Welcome back through Facebook! 🌿',
+            error: 'Facebook login failed.',
+          }
+        );
+        // Clear hash
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+  }, [loginWithSocial]);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -447,22 +469,14 @@ export function LoginPage() {
                   </svg>
                   Google
                 </button>
-                <FacebookLogin
-                  appId={import.meta.env.VITE_FACEBOOK_APP_ID || "123456789"}
-                  autoLoad={false}
-                  fields="name,email,picture"
-                  callback={responseFacebook}
-                  render={(renderProps: any) => (
-                    <button
-                      type="button"
-                      onClick={renderProps.onClick}
-                      className="flex items-center justify-center gap-2 py-4 bg-[#1877F2]/10 border border-[#1877F2]/10 rounded-2xl text-xs font-bold text-[#1877F2] hover:bg-[#1877F2]/20 transition-all w-full"
-                    >
-                      <Facebook size={16} fill="currentColor" stroke="none" />
-                      Facebook
-                    </button>
-                  )}
-                />
+                <button
+                  type="button"
+                  onClick={handleFacebookLogin}
+                  className="flex items-center justify-center gap-2 py-4 bg-[#1877F2]/10 border border-[#1877F2]/10 rounded-2xl text-xs font-bold text-[#1877F2] hover:bg-[#1877F2]/20 transition-all w-full"
+                >
+                  <Facebook size={16} fill="currentColor" stroke="none" />
+                  Facebook
+                </button>
               </div>
             </div>
           </form>

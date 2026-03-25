@@ -38,9 +38,15 @@ db.exec(`
 if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'phone')) {
   db.exec("ALTER TABLE users ADD COLUMN phone TEXT");
 }
-
+if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'reset_token')) {
+  db.exec("ALTER TABLE users ADD COLUMN reset_token TEXT");
+}
+if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'token_expiry')) {
+  db.exec("ALTER TABLE users ADD COLUMN token_expiry TEXT");
+}
 
 // Seed Admin User
+
 const adminCount = db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'admin'").get();
 if (adminCount.c === 0) {
   const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
