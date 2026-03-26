@@ -70,8 +70,12 @@ export function Profile() {
 
           <div className="profile-card-content">
             <div className="profile-avatar-container">
-              <div className="profile-avatar-inner">
-                <User className="text-white" size={48} />
+              <div className="profile-avatar-inner overflow-hidden border-4 border-white shadow-xl">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <User className="text-white" size={48} />
+                )}
               </div>
             </div>
 

@@ -102,11 +102,17 @@ export function Header({ cartItemCount, onCartClick, products }: HeaderProps) {
             {isUserAuthenticated ? (
               <div className="user-auth-block">
                 <Link to="/profile" className="user-profile-link">
-                  <User size={14} className="user-profile-icon" />
+                  <div className="user-avatar-mini">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="user-avatar-img" referrerPolicy="no-referrer" />
+                    ) : (
+                      <User size={12} className="user-profile-icon" />
+                    )}
+                  </div>
                   <span className="user-name">{user?.name}</span>
                 </Link>
                 <button
-                  onClick={() => { logout(); window.location.reload(); }}
+                  onClick={() => { logout(); navigate("/"); }}
                   className="logout-button"
                   title="Logout"
                 >

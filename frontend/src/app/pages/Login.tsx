@@ -31,14 +31,28 @@ export function LoginPage() {
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      toast.promise(
-        loginWithSocial("google", tokenResponse.access_token, "Google User", "google-user@example.com"),
-        {
-          loading: 'Authenticating with Google...',
-          success: 'Welcome back through Google! 🌿',
-          error: 'Google login failed.',
+      const toastId = toast.loading('Authenticating with Google...');
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const googleUser = await res.json();
+        const result = await loginWithSocial(
+          "google",
+          tokenResponse.access_token,
+          googleUser.name,
+          googleUser.email,
+          googleUser.picture
+        );
+        if (result.success) {
+          toast.success('Welcome back through Google! 🌿', { id: toastId });
+          setTimeout(() => navigate("/"), 800);
+        } else {
+          toast.error(result.error || 'Google login failed.', { id: toastId });
         }
-      );
+      } catch (err) {
+        toast.error("Failed to get Google user info.", { id: toastId });
+      }
     },
     onError: () => toast.error("Google login failed."),
   });
@@ -67,7 +81,21 @@ export function LoginPage() {
 
       if (accessToken && state === savedState) {
         toast.promise(
-          loginWithSocial("facebook", accessToken, "Facebook User", "fb-user@example.com"),
+          (async () => {
+            try {
+              const res = await fetch(`https://graph.facebook.com/me?fields=name,email,picture&access_token=${accessToken}`);
+              const fbUser = await res.json();
+              return await loginWithSocial(
+                "facebook",
+                accessToken,
+                fbUser.name || "Facebook User",
+                fbUser.email || "fb-user@example.com",
+                fbUser.picture?.data?.url
+              );
+            } catch (err) {
+              return await loginWithSocial("facebook", accessToken, "Facebook User", "fb-user@example.com");
+            }
+          })(),
           {
             loading: 'Authenticating with Facebook...',
             success: 'Welcome back through Facebook! 🌿',

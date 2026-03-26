@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 
 import { useAuth } from "../AuthProvider";
 import { Button } from "./ui/button";
-import { User, Lock, ArrowRight, ShieldCheck, Leaf, X, UserPlus, LogIn, Phone, Mail, Facebook } from "lucide-react";
+import { X, Mail, Lock, User, Phone, ArrowRight, Github, Chrome, Facebook, Leaf, LogIn, UserPlus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
-import { useGoogleLogin } from "@react-oauth/google";
-import FacebookLogin from "react-facebook-login/dist/facebook-login-render-props";
+import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 
 
 
 export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, login, register, loginWithSocial } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -22,17 +23,35 @@ export function LoginModal() {
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      // In a real app, you'd fetch user info from Google using this token
-      // or send the code to your backend to exchange it.
-      // For now, we'll simulate the user info or just pass the token.
-      toast.promise(
-        loginWithSocial("google", tokenResponse.access_token, "Google User", "google-user@example.com"),
-        {
-          loading: 'Authenticating with Google...',
-          success: 'Welcome back through Google! 🌿',
-          error: 'Google login failed.',
-        }
-      );
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const googleUser = await res.json();
+        
+        toast.promise(
+          loginWithSocial(
+            "google", 
+            tokenResponse.access_token, 
+            googleUser.name, 
+            googleUser.email, 
+            googleUser.picture
+          ),
+          {
+            loading: 'Authenticating with Google...',
+            success: () => {
+              setTimeout(() => {
+                closeLoginModal();
+                navigate("/");
+              }, 1000);
+              return 'Welcome back through Google! 🌿';
+            },
+            error: 'Google login failed.',
+          }
+        );
+      } catch (err) {
+        toast.error("Failed to get Google user info.");
+      }
     },
     onError: () => toast.error("Google login failed."),
   });
@@ -61,7 +80,21 @@ export function LoginModal() {
 
       if (accessToken && state === savedState) {
         toast.promise(
-          loginWithSocial("facebook", accessToken, "Facebook User", "fb-user@example.com"),
+          (async () => {
+            try {
+              const res = await fetch(`https://graph.facebook.com/me?fields=name,email,picture&access_token=${accessToken}`);
+              const fbUser = await res.json();
+              return await loginWithSocial(
+                "facebook", 
+                accessToken, 
+                fbUser.name || "Facebook User", 
+                fbUser.email || "fb-user@example.com", 
+                fbUser.picture?.data?.url
+              );
+            } catch (err) {
+              return await loginWithSocial("facebook", accessToken, "Facebook User", "fb-user@example.com");
+            }
+          })(),
           {
             loading: 'Authenticating with Facebook...',
             success: 'Welcome back through Facebook! 🌿',

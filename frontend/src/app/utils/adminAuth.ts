@@ -2,11 +2,18 @@
 
 const ADMIN_KEY = 'danphe_admin_session';
 
-export function setAdminSession(admin: { username: string; role: string }) {
+export interface AdminSession {
+  username: string;
+  role: string;
+  name?: string;
+  avatar?: string;
+}
+
+export function setAdminSession(admin: AdminSession) {
   localStorage.setItem(ADMIN_KEY, JSON.stringify(admin));
 }
 
-export function getAdminSession(): { username: string; role: string } | null {
+export function getAdminSession(): AdminSession | null {
   try {
     const raw = localStorage.getItem(ADMIN_KEY);
     return raw ? JSON.parse(raw) : null;

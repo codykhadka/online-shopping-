@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, Link, useLocation } from "react-router";
-import { LayoutDashboard, Package, Users, Settings, LogOut, Bell, Search, Shield, Cpu, Activity, Clock, Trash2, CheckCircle2 } from "lucide-react";
+import { LayoutDashboard, Package, Users, Settings, LogOut, Bell, Search, Shield, Cpu, Activity, Clock, Trash2, CheckCircle2, MessageSquare } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { clearAdminSession, getAdminSession } from "../utils/adminAuth";
 import { toast } from "sonner";
@@ -88,15 +88,25 @@ export function AdminLayout() {
             <NavItem icon={LayoutDashboard} label="Order Management" to="/admin/tracking" active={location.pathname === '/admin/tracking'} />
             <NavItem icon={Package} label="Product Catalog" to="/admin/products" active={location.pathname === '/admin/products'} />
             <NavItem icon={Users} label="Users Control" to="/admin/users" active={location.pathname === '/admin/users'} />
+            <NavItem icon={MessageSquare} label="Support Chat" to="/admin/chat" active={location.pathname === '/admin/chat'} />
             <NavItem icon={Activity} label="Monitoring" to="/admin/monitoring" active={location.pathname === '/admin/monitoring'} />
             <NavItem icon={Settings} label="System Config" to="/admin/config" active={location.pathname === '/admin/config'} />
           </nav>
         </div>
 
         <div className="mt-auto p-4 border-t border-zinc-800 bg-zinc-900/30">
-          <div className="mb-3 px-3 py-2 bg-zinc-900 rounded-xl">
-            <p className="text-xs font-black text-zinc-100">{admin?.username || 'Admin'}</p>
-            <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest">● Authorized</p>
+          <div className="mb-3 px-3 py-2 bg-zinc-900 rounded-xl flex items-center gap-3">
+            {admin?.avatar ? (
+              <img src={admin.avatar} alt={admin.name} className="size-8 rounded-lg object-cover border border-zinc-700" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="size-8 rounded-lg bg-zinc-800 flex items-center justify-center border border-zinc-700">
+                <Shield size={14} className="text-zinc-500" />
+              </div>
+            )}
+            <div className="flex flex-col min-w-0">
+              <p className="text-xs font-black text-zinc-100 truncate">{admin?.name || admin?.username || 'Admin'}</p>
+              <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest leading-none mt-0.5">Authorized</p>
+            </div>
           </div>
           <button
             onClick={handleLogout}
@@ -189,14 +199,18 @@ export function AdminLayout() {
 
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-zinc-100 leading-tight">Root Admin</p>
+                <p className="text-sm font-bold text-zinc-100 leading-tight">{admin?.name || 'Root Admin'}</p>
                 <div className="flex items-center gap-1 justify-end">
                   <div className="size-1 bg-green-500 rounded-full animate-pulse"></div>
                   <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Authorized</p>
                 </div>
               </div>
-              <div className="size-10 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 shadow-inner group hover:border-blue-500/50 transition-colors cursor-pointer">
-                <Shield size={20} className="text-zinc-400 group-hover:text-blue-500 transition-colors" />
+              <div className="size-10 bg-zinc-800 rounded-xl flex items-center justify-center border border-zinc-700 shadow-inner group hover:border-blue-500/50 transition-colors cursor-pointer overflow-hidden">
+                {admin?.avatar ? (
+                  <img src={admin.avatar} alt={admin.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <Shield size={20} className="text-zinc-400 group-hover:text-blue-500 transition-colors" />
+                )}
               </div>
             </div>
           </div>

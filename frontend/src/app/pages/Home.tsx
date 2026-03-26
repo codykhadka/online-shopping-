@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "../AuthProvider";
 import { Link } from "react-router";
 import { WelcomePopup } from "../components/WelcomePopup";
+import { LiveChat } from "../components/LiveChat";
 import "@/styles/ui styles/WelcomePopup.css";
 
 import "@/styles/Home.css";
@@ -687,6 +688,9 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
           </div>
         </div>
       </motion.section>
+
+      {/* Floating Customer Support Chat */}
+      <LiveChat user={user} />
     </motion.div>
   );
 }

@@ -14,6 +14,7 @@ import { NotFound } from "./pages/NotFound";
 import { Ratings } from "./pages/Ratings";
 import { HowToMake } from "./pages/HowToMake";
 import { AdminConfig } from "./pages/AdminConfig";
+import { AdminChat } from "./pages/AdminChat";
 import { AdminUsers } from "./pages/AdminUsers";
 import { AdminMonitoring } from "./pages/AdminMonitoring";
 import { Profile } from "./pages/Profile";
@@ -198,6 +199,10 @@ export const router = createBrowserRouter([
               {
                 path: "config",
                 Component: AdminConfig,
+              },
+              {
+                path: "chat",
+                Component: AdminChat,
               },
             ],
           },

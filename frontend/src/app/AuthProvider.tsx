@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, getAuthUser, loginUser, logoutUser, registerUser } from "./utils/auth";
+import { setAdminSession } from "./utils/adminAuth";
 
 interface AuthContextType {
   user: User | null;
@@ -8,7 +9,7 @@ interface AuthContextType {
   closeLoginModal: () => void;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, username: string, password: string, phone?: string, email?: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithSocial: (provider: string, token: string, name?: string, email?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithSocial: (provider: string, token: string, name?: string, email?: string, profilePic?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -44,17 +45,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return result;
   };
 
-  const loginWithSocial = async (provider: string, token: string, name?: string, email?: string) => {
+  const loginWithSocial = async (provider: string, token: string, name?: string, email?: string, profilePic?: string) => {
     try {
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
       const response = await fetch(`${API_URL}/auth/social-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, token, name, email }),
+        body: JSON.stringify({ provider, token, name, email, profilePic }),
       });
       const result = await response.json();
       if (result.success) {
         localStorage.setItem("danphe_organic_auth", JSON.stringify(result.user));
+        
+        // Link to admin session if user is an admin
+        if (result.user.role === 'admin') {
+          setAdminSession({
+            username: result.user.username,
+            role: result.user.role,
+            name: result.user.name,
+            avatar: result.user.avatar
+          });
+        }
+
         setUser(result.user);
         setIsLoginModalOpen(false);
         window.dispatchEvent(new Event('auth-change'));
@@ -71,9 +83,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isLoginModalOpen, 
+    <AuthContext.Provider value={{
+      user,
+      isLoginModalOpen,
       openLoginModal: () => setIsLoginModalOpen(true),
       closeLoginModal: () => setIsLoginModalOpen(false),
       login,
@@ -93,3 +105,5 @@ export function useAuth() {
   }
   return context;
 }
+export default AuthContext;
+

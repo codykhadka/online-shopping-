@@ -5,6 +5,8 @@ export interface User {
   username: string;
   phone: string | null;
   email: string | null;
+  role: 'user' | 'admin' | 'delivery';
+  avatar?: string;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";

@@ -20,6 +20,7 @@ interface AdminUser {
    password?: string;
    email: string | null;
    phone: string | null;
+   avatar?: string;
    role: string;
    created_at: string;
    orders: UserOrder[];
@@ -79,9 +80,13 @@ export function AdminUsers() {
                      </div>
 
                      <div className="profile-header">
-                        <div className="profile-avatar-wrapper">
-                           <User size={32} className="icon" />
-                        </div>
+                         <div className="profile-avatar-wrapper overflow-hidden border-2 border-white/20">
+                            {selectedUser.avatar ? (
+                               <img src={selectedUser.avatar} alt={selectedUser.name} className="w-full h-full object-cover" />
+                            ) : (
+                               <User size={32} className="icon" />
+                            )}
+                         </div>
                         <h3 className="profile-name">{selectedUser.name}</h3>
                         <p className="profile-username">@{selectedUser.username}</p>
                      </div>
@@ -211,10 +216,14 @@ export function AdminUsers() {
                               className="user-row"
                            >
                               <td>
-                                 <div className="personnel-cell">
-                                    <div className="personnel-icon-wrapper">
-                                       <User size={20} />
-                                    </div>
+                                  <div className="personnel-cell">
+                                     <div className="personnel-icon-wrapper overflow-hidden bg-zinc-800">
+                                        {user.avatar ? (
+                                           <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                           <User size={20} />
+                                        )}
+                                     </div>
                                     <div className="personnel-info">
                                        <p className="name">{user.name}</p>
                                        <p className="username">@{user.username}</p>

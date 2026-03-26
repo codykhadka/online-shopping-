@@ -4,9 +4,20 @@ const cors = require('cors');
 const path = require('path');
 const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Wrap express with HTTP server for Socket.io
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
+
+// Map of socketId -> userId for presence tracking
+const socketToUser = new Map();
 
 // Admin credentials — change these in your .env file
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'Cody';
@@ -29,12 +40,16 @@ db.exec(`
     role         TEXT    DEFAULT 'user',
     email        TEXT    UNIQUE,
     phone        TEXT,
+    avatar       TEXT,
     reset_token  TEXT,
     token_expiry TEXT,
     created_at   TEXT    DEFAULT (datetime('now'))
   )
 `);
 
+if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'avatar')) {
+  db.exec("ALTER TABLE users ADD COLUMN avatar TEXT");
+}
 if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'phone')) {
   db.exec("ALTER TABLE users ADD COLUMN phone TEXT");
 }
@@ -165,6 +180,27 @@ if (configCount.c === 0) {
   insert.run('currency', 'Rs.');
 }
 
+// ── Persistent Chat Tables ────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS chat_sessions (
+    userId TEXT PRIMARY KEY,
+    userName TEXT NOT NULL,
+    socketId TEXT,
+    lastActive TEXT DEFAULT (datetime('now'))
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId TEXT NOT NULL,
+    text TEXT NOT NULL,
+    isUser INTEGER NOT NULL,
+    timestamp TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(userId) REFERENCES chat_sessions(userId)
+  )
+`);
+
 // ── Default Home Route ────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.send(`
@@ -182,7 +218,7 @@ app.post('/api/auth/admin/login', (req, res) => {
     const user = db.prepare("SELECT * FROM users WHERE username = ? AND role = 'admin'").get(username);
 
     if (user && bcrypt.compareSync(password, user.password)) {
-      return res.json({ success: true, admin: { username: user.username, name: user.name, role: 'admin' } });
+      return res.json({ success: true, admin: { username: user.username, name: user.name, role: 'admin', avatar: user.avatar } });
     }
     return res.status(401).json({ success: false, error: 'Invalid admin credentials.' });
   } catch (err) {
@@ -211,7 +247,7 @@ app.post('/api/auth/login', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
   if (!bcrypt.compareSync(password, user.password)) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
-  res.json({ success: true, user: { id: user.id, name: user.name, username: user.username, phone: user.phone, email: user.email } });
+  res.json({ success: true, user: { id: user.id, name: user.name, username: user.username, phone: user.phone, email: user.email, avatar: user.avatar } });
 });
 
 app.post('/api/auth/social-login', async (req, res) => {
@@ -229,15 +265,20 @@ app.post('/api/auth/social-login', async (req, res) => {
 
     if (!user) {
       // Create new user if they don't exist
-      // For social logins, we generate a random username if one isn't provided or based on email
       const username = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
       const randomPassword = Math.random().toString(36).substr(2, 10);
       const hashedPassword = bcrypt.hashSync(randomPassword, 10);
 
-      const result = db.prepare('INSERT INTO users (name, username, password, email) VALUES (?, ?, ?, ?)')
-        .run(name || 'Social User', username, hashedPassword, email);
+      const result = db.prepare('INSERT INTO users (name, username, password, email, avatar) VALUES (?, ?, ?, ?, ?)')
+        .run(name || 'Social User', username, hashedPassword, email, profilePic || null);
 
       user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+    } else if (user) {
+      // Update existing user with social info to keep profile in sync
+      db.prepare('UPDATE users SET name = ?, avatar = ? WHERE id = ?')
+        .run(name || user.name, profilePic || user.avatar, user.id);
+      // Refresh user data
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
     }
 
     res.json({
@@ -247,7 +288,8 @@ app.post('/api/auth/social-login', async (req, res) => {
         name: user.name,
         username: user.username,
         phone: user.phone,
-        email: user.email
+        email: user.email,
+        avatar: user.avatar
       }
     });
   } catch (err) {
@@ -413,7 +455,7 @@ app.get('/api/users/:userId/orders', (req, res) => {
 
 app.get('/api/admin/users', (req, res) => {
   try {
-    const users = db.prepare('SELECT id, name, username, email, password, phone, role, created_at FROM users').all();
+    const users = db.prepare('SELECT id, name, username, email, password, phone, avatar, role, created_at FROM users').all();
     const result = users.map(user => {
       const orders = db.prepare('SELECT * FROM orders WHERE user_id = ?').all(user.id);
       return { ...user, orders };
@@ -539,7 +581,154 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('\x1b[31m[FATAL UNHANDLED REJECTION]\x1b[0m', reason);
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+// ── Socket.io Connection Handlers ──────────────────────────────────────────
+io.on('connection', (socket) => {
+  console.log(`[SOCKET] Client connected: ${socket.id}`);
+
+  // Admin joins the secure admin room
+  socket.on('join_admin', () => {
+    socket.join('adminRoom');
+    console.log(`[SOCKET] Admin joined adminRoom: ${socket.id}`);
+    
+    // Fetch all sessions and messages from database
+    const sessionsRows = db.prepare("SELECT * FROM chat_sessions ORDER BY lastActive DESC").all();
+    const activeChatSessions = {};
+    
+    sessionsRows.forEach(row => {
+      // Check if this user has any active sockets
+      const isOnline = Array.from(socketToUser.values()).includes(row.userId);
+      
+      const messages = db.prepare("SELECT text, isUser, timestamp FROM chat_messages WHERE userId = ? ORDER BY id ASC").all(row.userId);
+      activeChatSessions[row.userId] = {
+        userId: row.userId,
+        userName: row.userName,
+        socketId: row.socketId,
+        lastActive: row.lastActive,
+        messages: messages.map(m => ({
+          id: Math.random().toString(36).substr(2, 9),
+          text: m.text,
+          isUser: m.isUser === 1,
+          timestamp: m.timestamp
+        }))
+      };
+    });
+    
+    socket.emit('sync_sessions', activeChatSessions);
+  });
+
+  // User identifies themselves upon connection to sync their latest socketId/name
+  socket.on('user_identify', (data) => {
+    console.log(`[SOCKET] User identity received: ${data.userName} (${data.userId})`);
+    
+    // Map this socket to this specific user ID
+    socketToUser.set(socket.id, data.userId);
+
+    const timestamp = new Date().toISOString();
+    
+    // Update session record with latest socketId and potentially updated userName
+    db.prepare(`
+      INSERT INTO chat_sessions (userId, userName, socketId, lastActive) 
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(userId) DO UPDATE SET 
+      userName=excluded.userName, 
+      socketId=excluded.socketId, 
+      lastActive=excluded.lastActive
+    `).run(data.userId, data.userName, socket.id, timestamp);
+
+    // Notify admins that this user is online/updated
+    io.to('adminRoom').emit('update_user_status', {
+      userId: data.userId,
+      userName: data.userName,
+      socketId: socket.id,
+      lastActive: timestamp,
+      isOnline: true
+    });
+
+    // Send history back to the user so they see the admin's replies from when they were offline
+    const messages = db.prepare("SELECT text, isUser, timestamp FROM chat_messages WHERE userId = ? ORDER BY id ASC").all(data.userId);
+    socket.emit('chat_history', messages.map(m => ({
+      id: Math.random().toString(36).substr(2, 9),
+      text: m.text,
+      isUser: m.isUser === 1,
+      timestamp: m.timestamp
+    })));
+  });
+
+  // Handle incoming messages from users
+  socket.on('user_message', (data) => {
+    console.log(`[SOCKET] User message from ${data.userId || 'Guest'}: ${data.text}`);
+    
+    const timestamp = new Date().toISOString();
+    const userName = data.userName || 'Guest';
+    
+    // Save or update session
+    db.prepare(`
+      INSERT INTO chat_sessions (userId, userName, socketId, lastActive) 
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(userId) DO UPDATE SET 
+      userName=excluded.userName, 
+      socketId=excluded.socketId, 
+      lastActive=excluded.lastActive
+    `).run(data.userId, userName, socket.id, timestamp);
+    
+    // Save message
+    db.prepare('INSERT INTO chat_messages (userId, text, isUser, timestamp) VALUES (?, ?, 1, ?)')
+      .run(data.userId, data.text, timestamp);
+
+    // Broadcast to admins
+    io.to('adminRoom').emit('user_message', { 
+      ...data, 
+      socketId: socket.id, 
+      timestamp: timestamp 
+    });
+  });
+
+  // Handle replies from admin to a specific user
+  socket.on('admin_message', (data) => {
+    console.log(`[SOCKET] Admin reply to ${data.targetSocketId}: ${data.text}`);
+    
+    const timestamp = new Date().toISOString();
+    const userId = data.userId; // Frontend now sends userId
+    
+    if (userId) {
+      db.prepare('UPDATE chat_sessions SET lastActive = ? WHERE userId = ?').run(timestamp, userId);
+      db.prepare('INSERT INTO chat_messages (userId, text, isUser, timestamp) VALUES (?, ?, 0, ?)')
+        .run(userId, data.text, timestamp);
+        
+      // Broadcast the reply to ALL admins (including the sender for sync)
+      io.to('adminRoom').emit('admin_message_received', {
+        userId: userId,
+        text: data.text,
+        timestamp: timestamp
+      });
+    }
+    
+    if (data.targetSocketId) {
+      io.to(data.targetSocketId).emit('admin_reply', { 
+        text: data.text, 
+        timestamp: timestamp 
+      });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    const userId = socketToUser.get(socket.id);
+    if (userId) {
+      console.log(`[SOCKET] User offline: ${userId}`);
+      socketToUser.delete(socket.id);
+      
+      // Notify admins that this specific user went offline
+      io.to('adminRoom').emit('update_user_status', {
+        userId: userId,
+        isOnline: false
+      });
+    } else {
+      console.log(`[SOCKET] Client disconnected: ${socket.id}`);
+    }
+  });
+});
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
   console.log(`API check: http://localhost:${PORT}/api/products`);
   console.log(`Admin login: username="${ADMIN_USERNAME}", password="${ADMIN_PASSWORD}"`);
