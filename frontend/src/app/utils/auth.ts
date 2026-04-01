@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 export interface User {
-  id: number;
+  id: string;
   name: string;
   username: string;
   phone: string | null;
@@ -11,6 +11,11 @@ export interface User {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const AUTH_KEY = "danphe_organic_auth";
+const TOKEN_KEY = "danphe_organic_token";
+
+export const getAuthToken = (): string | null => {
+  return localStorage.getItem(TOKEN_KEY);
+};
 
 export const getAuthUser = (): User | null => {
   const saved = localStorage.getItem(AUTH_KEY);
@@ -27,6 +32,7 @@ export const registerUser = async (name: string, username: string, password: str
     const result = await response.json();
     if (result.success) {
       localStorage.setItem(AUTH_KEY, JSON.stringify(result.user));
+      localStorage.setItem(TOKEN_KEY, result.token);
       window.dispatchEvent(new Event('auth-change'));
     }
     return result;
@@ -45,6 +51,7 @@ export const loginUser = async (username: string, password: string): Promise<{ s
     const result = await response.json();
     if (result.success) {
       localStorage.setItem(AUTH_KEY, JSON.stringify(result.user));
+      localStorage.setItem(TOKEN_KEY, result.token);
       window.dispatchEvent(new Event('auth-change'));
     }
     return result;
@@ -55,6 +62,7 @@ export const loginUser = async (username: string, password: string): Promise<{ s
 
 export const logoutUser = () => {
   localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(TOKEN_KEY);
   window.dispatchEvent(new Event('storage'));
   window.dispatchEvent(new Event('auth-change'));
 };

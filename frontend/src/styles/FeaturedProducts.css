@@ -1,0 +1,203 @@
+/* FeaturedProducts.css */
+
+.featured-page {
+  position: relative;
+  min-height: 100vh;
+  background-color: #fafdfb;
+  overflow: hidden;
+  padding-bottom: 6rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.featured-parallax-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60vh;
+  background: radial-gradient(ellipse at top right, rgba(210, 245, 230, 0.4), transparent 70%),
+              radial-gradient(ellipse at bottom left, rgba(245, 240, 210, 0.4), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.featured-ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.top-blob {
+  top: -10%;
+  right: -5%;
+  width: 400px;
+  height: 400px;
+  background: rgba(167, 243, 208, 0.4);
+  animation: float-1 20s infinite ease-in-out alternate;
+}
+
+.bottom-blob {
+  bottom: 10%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  background: rgba(254, 243, 199, 0.4);
+  animation: float-2 25s infinite ease-in-out alternate;
+}
+
+@keyframes float-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 40px) scale(1.1); }
+  100% { transform: translate(20px, -20px) scale(0.9); }
+}
+
+@keyframes float-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.1); }
+  100% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
+.featured-content-wrapper {
+  position: relative;
+  z-index: 10;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 8rem 2rem 2rem 2rem;
+}
+
+.featured-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3rem;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.featured-back-link:hover {
+  color: #10b981;
+}
+
+.featured-back-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #10b981;
+  transition: width 0.3s ease;
+}
+
+.featured-back-link:hover::after {
+  width: 100%;
+}
+
+.featured-hero-header {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto 5rem auto;
+}
+
+.featured-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(254, 243, 199, 0.6);
+  border: 1px solid rgba(252, 211, 77, 0.4);
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(252, 211, 77, 0.15);
+}
+
+.featured-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  line-height: 1.1;
+  color: #0f172a;
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.03em;
+}
+
+.featured-subtitle {
+  font-size: 1.125rem;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.featured-grid-container {
+  position: relative;
+}
+
+.featured-loading, .featured-error, .featured-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+  color: #64748b;
+}
+
+.featured-loading p {
+  font-weight: 600;
+  color: #10b981;
+  animation: pulse 2s infinite;
+}
+
+.featured-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2.5rem;
+}
+
+.featured-card-wrapper {
+  position: relative;
+  display: block;
+  border-radius: 20px;
+}
+
+/* Add a very subtle, dynamic glow behind featured products */
+.featured-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
+  z-index: -1;
+  opacity: 0;
+  filter: blur(8px);
+  transition: opacity 0.4s ease;
+}
+
+.featured-card-wrapper:hover .featured-glow {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .featured-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .featured-content-wrapper {
+    padding: 6rem 1.25rem 2rem 1.25rem;
+  }
+}

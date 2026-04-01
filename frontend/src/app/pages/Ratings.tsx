@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Product } from "../data/products";
-import { Star, Heart, MessageSquare, Send, Quote, X } from "lucide-react";
+import { Star, Heart, MessageSquare, Send, Quote, X, ShoppingBag, Sparkles, TrendingUp, Award, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SocialData } from "./Root";
+import { PaymentDialog } from "../components/PaymentDialog";
+import "@/styles/Ratings.css";
 
 interface RatingsProps {
   onAddToCart: (product: Product) => void;
@@ -12,7 +14,31 @@ interface RatingsProps {
   onToggleLike: (productId: string) => void;
   onAddComment: (productId: string, text: string, isMotivational?: boolean) => void;
   products: Product[];
+  userCount?: number;
+  visitorCount?: number;
 }
+
+// Helper to generate a consistent color for user avatars
+const getAvatarColor = (name: string) => {
+  const colors = [
+    "#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", 
+    "#ec4899", "#06b6d4", "#f97316", "#84cc16"
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
+const getRatingLabel = (rating: number) => {
+  if (rating === 5) return "Amazing";
+  if (rating === 4) return "Good";
+  if (rating === 3) return "Average";
+  if (rating === 2) return "Poor";
+  if (rating === 1) return "Terrible";
+  return "";
+};
 
 export function Ratings({
   onAddToCart,
@@ -21,12 +47,16 @@ export function Ratings({
   socialData,
   onToggleLike,
   onAddComment,
-  products
+  products,
+  userCount = 0,
+  visitorCount = 1
 }: RatingsProps) {
   const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
   const [isMotivational, setIsMotivational] = useState<{ [key: string]: boolean }>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [paymentProduct, setPaymentProduct] = useState<Product | null>(null);
+  const [hoverRating, setHoverRating] = useState<number>(0);
 
   const handleCommentChange = (productId: string, value: string) => {
     setCommentInputs(prev => ({ ...prev, [productId]: value }));
@@ -41,210 +71,134 @@ export function Ratings({
     setIsMotivational(prev => ({ ...prev, [productId]: false }));
   };
 
+  // Determine which items get ribbons
+  const trendingItems = useMemo(() => {
+    // For demo, top 3 products are "Trending", top 2 are "Award Winner"
+    const sortedByRating = [...products].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    return {
+      trending: sortedByRating.slice(0, 3).map(p => p.id),
+      award: sortedByRating.slice(0, 1).map(p => p.id)
+    };
+  }, [products]);
+
   return (
-    <div className="min-h-screen bg-neutral-50 pt-24 pb-12">
-      <div className="container mx-auto px-4">
+    <div className="ratings-page">
+      <div className="ratings-container">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -40 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="ratings-header"
         >
-          <h1 className="text-5xl font-black text-neutral-900 mb-4 tracking-tight">
+          <div className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400 font-bold text-[10px] uppercase tracking-widest border border-emerald-100 dark:border-emerald-900/50">
+            <TrendingUp size={12} />
+            Community Driven
+          </div>
+          <h1 className="ratings-title">
             Community & Ratings
           </h1>
-          <p className="text-neutral-500 text-lg max-w-2xl mx-auto">
+          <p className="ratings-subtitle">
             Share your thoughts, like your favorites, and spread motivational vibes with the community.
           </p>
+          <div className="community-status-row">
+            <div className="status-item">
+              <span className="status-dot pulse" />
+              <span>{visitorCount} Visiting Now</span>
+            </div>
+            <div className="status-divider w-px h-4 bg-neutral-200 dark:bg-neutral-800" />
+            <div className="status-item">
+              <Sparkles className="size-3.5 text-amber-500" />
+              <span>{userCount.toLocaleString()}+ Happy Customers</span>
+            </div>
+          </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+          }}
+          className="ratings-grid"
+        >
           {products.map((product) => {
-            const likesCount = socialData.likes[product.id]?.count || 0;
+            const likesCount = product.likes || 0;
             const isLiked = socialData.likes[product.id]?.isLiked || false;
-            const comments = socialData.comments[product.id] || [];
+            const isTrending = trendingItems.trending.includes(product.id);
+            const isAward = trendingItems.award.includes(product.id);
 
             return (
               <motion.div
                 key={product.id}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                onMouseEnter={() => setActiveCardId(product.id)}
-                onMouseLeave={() => setActiveCardId(null)}
+                variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: { opacity: 1, y: 0 }
+                }}
                 onClick={() => setSelectedProduct(product)}
-                className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden flex flex-col h-[320px] group transition-all hover:shadow-xl hover:shadow-neutral-200/50 relative cursor-pointer"
+                className="product-card"
               >
+                {/* Ribbons */}
+                {isTrending && (
+                  <div className="trending-ribbon">
+                    <Zap size={10} className="fill-current" />
+                    Trending
+                  </div>
+                )}
+                {isAward && !isTrending && (
+                  <div className="trending-ribbon" style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}>
+                    <Award size={10} className="fill-current" />
+                    Top Rated
+                  </div>
+                )}
+
                 {/* Product Image Area */}
-                <div className="w-full relative h-40 overflow-hidden">
+                <div className="product-image-section">
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="size-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    className="product-img"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <div className="absolute bottom-3 left-3 text-white font-bold">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-green-300 mb-0.5">{product.category}</p>
-                    <h2 className="text-sm font-black tracking-tight leading-tight">{product.name}</h2>
+                  <div className="image-overlay" />
+                  <div className="floating-info">
+                    <p className="category-tag">{product.category}</p>
+                    <h2 className="product-name-small">{product.name}</h2>
                   </div>
 
-                  {/* Floating Like Button */}
-                  <button
-                    onClick={() => onToggleLike(product.id)}
-                    className={`absolute top-2 right-2 p-2 rounded-xl backdrop-blur-md transition-all ${isLiked
-                      ? "bg-red-500 text-white shadow-lg shadow-red-500/30 scale-110"
-                      : "bg-white/20 text-white hover:bg-white/40"
-                      }`}
-                  >
+                  {/* Read-only Like Badge */}
+                  <div className={`like-btn ${isLiked ? "liked" : ""}`} style={{ color: isLiked ? '#ef4444' : 'white' }}>
                     <Heart className={`size-4 ${isLiked ? "fill-current" : ""}`} />
-                  </button>
-                </div>
-
-                {/* Permanent Content Area */}
-                <div className="p-4 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-green-100">
-                        <Star className="size-3 fill-green-600 text-green-600" />
-                        <span className="text-[10px] font-black text-green-700">{product.rating}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-neutral-400">
-                        <Heart className="size-3" />
-                        <span className="text-[10px] font-bold">{likesCount}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddToCart(product);
-                      }}
-                      className="bg-neutral-900 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg hover:bg-green-600 transition-colors shadow-sm"
-                    >
-                      Buy
-                    </button>
-                  </div>
-
-                  <div className="mt-auto group-hover:hidden">
-                    <p className="text-[10px] text-neutral-400 italic mb-1">Hover for details & comments</p>
-                    <div className="w-full h-1 bg-neutral-100 rounded-full overflow-hidden">
-                      <div className="w-1/3 h-full bg-green-500 rounded-full group-hover:w-full transition-all duration-500" />
-                    </div>
                   </div>
                 </div>
 
-                {/* Hover/Click Overlay Area */}
-                <motion.div
-                  initial={{ opacity: 0, y: "100%" }}
-                  animate={{
-                    opacity: activeCardId === product.id ? 1 : 0,
-                    y: activeCardId === product.id ? 0 : "100%"
-                  }}
-                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                  className={`absolute inset-0 bg-white/95 backdrop-blur-sm p-4 flex flex-col z-10 ${activeCardId === product.id ? "pointer-events-auto" : "pointer-events-none"
-                    }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Quick Preview</span>
-                    <Heart size={12} className={isLiked ? "fill-red-500 text-red-500" : "text-neutral-300"} />
-                  </div>
-                  <h3 className="text-xs font-black text-neutral-900 mb-3 truncate px-1">{product.name}</h3>
-
-                  {/* Rating Section */}
-                  <div className="mb-4 bg-neutral-50 p-3 rounded-2xl border border-neutral-100">
-                    <p className="text-[10px] uppercase font-black text-neutral-500 tracking-widest mb-2 text-center">Your Rating</p>
-                    <div className="flex items-center justify-center gap-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`size-5 cursor-pointer transition-all hover:scale-125 ${i < (userRatings[product.id] || 0)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-neutral-300 hover:text-yellow-400"
-                            }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRate(product.id, i + 1);
-                          }}
-                        />
-                      ))}
+                {/* Body Area */}
+                <div className="product-card-body">
+                  <div className="stats-row">
+                    <div className="stats-pills">
+                      <div className="rating-pill">
+                        <Star className="size-3 fill-amber-400 text-amber-400" />
+                        <span>{product.rating} <span className="text-[8px] opacity-60">({product.ratingCount || 0})</span></span>
+                      </div>
+                      <div className="likes-pill">
+                        <Heart className="size-3 fill-red-400 text-red-400 opacity-60" />
+                        <span>{likesCount}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Comments Display */}
-                  <div className="flex-1 mb-4 overflow-y-auto max-h-36 custom-scrollbar">
-                    <p className="text-[10px] uppercase font-black text-neutral-500 tracking-widest mb-2">Community Comments</p>
-                    <div className="space-y-1.5">
-                      <AnimatePresence initial={false}>
-                        {comments.length === 0 ? (
-                          <p className="text-xs text-neutral-400 italic py-2 text-center">No comments yet. Be the first!</p>
-                        ) : (
-                          comments.map((c, i) => (
-                            <motion.div
-                              key={i}
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className={`p-2 rounded-xl border ${c.isMotivational
-                                  ? "bg-amber-50 border-amber-100 text-amber-900 shadow-sm"
-                                  : "bg-white border-neutral-100 text-neutral-700 shadow-sm"
-                                }`}
-                            >
-                              <div className="flex items-start gap-2">
-                                {c.isMotivational && <Quote className="size-3 mt-0.5 shrink-0 text-amber-500" />}
-                                <p className={`text-[11px] font-medium ${c.isMotivational ? "italic leading-relaxed" : "leading-relaxed"}`}>
-                                  {c.text}
-                                </p>
-                              </div>
-                            </motion.div>
-                          ))
-                        )}
-                      </AnimatePresence>
-                    </div>
+                  <div className="flex items-center justify-between mt-4">
+                     <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Click to Review</p>
+                     <ShoppingBag size={14} className="text-emerald-500 opacity-40" />
                   </div>
-
-                  {/* Comment Input */}
-                  <div className="mt-auto pt-2 border-t border-neutral-100">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsMotivational(prev => ({ ...prev, [product.id]: !prev[product.id] }));
-                        }}
-                        className={`text-[10px] font-black px-2 py-1 rounded-lg border transition-all ${isMotivational[product.id]
-                          ? "bg-amber-500 border-amber-600 text-white shadow-md shadow-amber-200"
-                          : "bg-white border-neutral-200 text-neutral-300 hover:bg-neutral-50 shadow-sm"
-                          }`}
-                      >
-                        ✨ Motivational
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder={isMotivational[product.id] ? "Share a motive..." : "Add a comment..."}
-                        value={commentInputs[product.id] || ""}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => handleCommentChange(product.id, e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && submitComment(product.id)}
-                        className={`w-full pl-4 pr-10 py-2.5 bg-neutral-100 border-none rounded-2xl text-xs focus:ring-2 transition-all shadow-inner ${isMotivational[product.id] ? "focus:ring-amber-500 bg-amber-50 placeholder-amber-400 text-amber-900" : "focus:ring-green-500 text-neutral-800"
-                          }`}
-                      />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          submitComment(product.id);
-                        }}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-neutral-400 hover:text-green-600 transition-colors"
-                      >
-                        <Send size={10} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
+                </div>
               </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
 
-      {/* Big Side Detail Panel */}
-      <AnimatePresence>
+      {/* Luxury Side Detail Panel */}
+      <AnimatePresence mode="wait">
         {selectedProduct && (
           <>
             {/* Backdrop */}
@@ -253,7 +207,7 @@ export function Ratings({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedProduct(null)}
-              className="fixed inset-0 bg-neutral-900/40 backdrop-blur-md z-[60]"
+              className="panel-backdrop"
             />
 
             {/* Panel */}
@@ -262,133 +216,197 @@ export function Ratings({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed top-0 right-0 h-screen w-full sm:w-[500px] bg-white shadow-2xl z-[70] overflow-hidden flex flex-col shadow-black/20"
+              className="side-panel"
             >
               {/* Panel Header */}
-              <div className="p-6 border-b border-neutral-100 flex items-center justify-between bg-white sticky top-0 z-10">
+              <div className="panel-header">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-600 mb-1">{selectedProduct.category}</p>
-                  <h2 className="text-2xl font-black text-neutral-900 tracking-tight">{selectedProduct.name}</h2>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 mb-1">{selectedProduct.category}</p>
+                  <h2 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight leading-none">{selectedProduct.name}</h2>
                 </div>
                 <button
                   onClick={() => setSelectedProduct(null)}
-                  className="p-3 hover:bg-neutral-100 rounded-full transition-colors text-neutral-400 hover:text-neutral-900"
+                  className="p-3 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
                 >
                   <X size={24} />
                 </button>
               </div>
-
-              {/* Panel Content */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
-                {/* Product Focus Image */}
-                <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-xl shadow-neutral-100 border border-neutral-100">
-                  <img src={selectedProduct.image} alt={selectedProduct.name} className="size-full object-cover" />
-                </div>
-
-                {/* Big Rating Section */}
-                <div className="bg-neutral-50 rounded-[32px] p-8 border border-neutral-100 text-center">
-                  <p className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-4 font-mono">Your Experience</p>
-                  <div className="flex items-center justify-center gap-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`size-10 cursor-pointer transition-all hover:scale-110 active:scale-95 ${i < (userRatings[selectedProduct.id] || 0)
-                          ? "fill-yellow-400 text-yellow-400 drop-shadow-lg"
-                          : "text-neutral-200 hover:text-yellow-400"
-                          }`}
-                        onClick={() => onRate(selectedProduct.id, i + 1)}
-                      />
-                    ))}
-                  </div>
-                  <p className="mt-4 text-xs font-bold text-neutral-500">
-                    {userRatings[selectedProduct.id] ? `You rated it ${userRatings[selectedProduct.id]} stars` : "Click to rate this product"}
-                  </p>
-                </div>
-
-                {/* Big Comments Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-black text-neutral-900 flex items-center gap-2">
-                      <MessageSquare className="size-5 text-green-600" />
-                      Community Feed
-                    </h3>
-                    <div className="flex items-center gap-1.5 px-3 py-1 bg-neutral-100 rounded-full text-xs font-bold text-neutral-600 shadow-sm">
-                      <Heart className={`size-3.5 ${socialData.likes[selectedProduct.id]?.isLiked ? "fill-red-500 text-red-500" : ""}`} />
-                      {socialData.likes[selectedProduct.id]?.count || 0} Likes
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {socialData.comments[selectedProduct.id]?.length === 0 ? (
-                      <div className="py-12 text-center bg-white rounded-3xl border border-dashed border-neutral-200">
-                        <p className="text-neutral-400 text-sm italic">Be the first to share your thoughts!</p>
-                      </div>
-                    ) : (
-                      socialData.comments[selectedProduct.id]?.map((c, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`p-4 rounded-2xl border ${c.isMotivational
-                            ? "bg-amber-50 border-amber-100 text-amber-900 shadow-sm"
-                            : "bg-white border-neutral-100 text-neutral-700 shadow-sm"
-                            }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            {c.isMotivational ? (
-                              <Quote className="size-5 mt-1 shrink-0 text-amber-500" />
-                            ) : (
-                              <div className="size-2 rounded-full bg-green-500 mt-2 shrink-0" />
-                            )}
-                            <p className={`text-sm leading-relaxed ${c.isMotivational ? "font-serif italic text-lg" : "font-medium"}`}>
-                              {c.text}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))
+              {/* Panel Content - Dual Column Layout */}
+              <div className="panel-body">
+                {/* LEFT COLUMN: Product Info & Actions */}
+                <div className="panel-left-column custom-scrollbar">
+                  <div className="focus-image-wrapper">
+                    <img src={selectedProduct.image} alt={selectedProduct.name} className="focus-image" />
+                    {!selectedProduct.inStock && (
+                      <div className="out-of-stock-badge">Out of Stock</div>
                     )}
                   </div>
-                </div>
-              </div>
 
-              {/* Sticky Comment Area */}
-              <div className="p-6 bg-white border-t border-neutral-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <button
-                    onClick={() => setIsMotivational(prev => ({ ...prev, [selectedProduct.id]: !prev[selectedProduct.id] }))}
-                    className={`text-xs font-black px-4 py-2 rounded-xl border transition-all flex items-center gap-2 ${isMotivational[selectedProduct.id]
-                      ? "bg-amber-500 border-amber-600 text-white shadow-lg shadow-amber-200"
-                      : "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50 shadow-sm"
-                      }`}
-                  >
-                    {isMotivational[selectedProduct.id] ? "✨ Motivational Active" : "Regular Comment"}
-                  </button>
+                  <div className="pannel-bottom">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (selectedProduct) onAddToCart(selectedProduct);
+                      }}
+                      className="slide-cart-btn"
+                    >
+                      <ShoppingBag size={18} />
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPaymentProduct(selectedProduct);
+                        setSelectedProduct(null);
+                        setTimeout(() => setIsPaymentOpen(true), 300);
+                      }}
+                      className="slide-buy-btn"
+                    >
+                      Buy Now
+                    </button>
+                  </div>
+
+                  {/* Interactive Rating Section */}
+                  <div className="experience-section">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">
+                        Your Experience
+                      </h3>
+                      {hoverRating > 0 && (
+                        <motion.span 
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="text-[11px] font-black text-amber-500 uppercase tracking-tighter"
+                        >
+                          {getRatingLabel(hoverRating)}
+                        </motion.span>
+                      )}
+                    </div>
+                    <div className="experience-stars">
+                      {[...Array(5)].map((_, i) => {
+                        const starValue = i + 1;
+                        const isFilled = starValue <= (hoverRating || userRatings[selectedProduct.id] || 0);
+                        return (
+                          <Star
+                            key={i}
+                            className={`large-star ${isFilled ? "filled" : "empty"}`}
+                            onMouseEnter={() => setHoverRating(starValue)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            onClick={() => onRate(selectedProduct.id, starValue)}
+                          />
+                        );
+                      })}
+                    </div>
+                    <p className="experience-feedback">
+                      {userRatings[selectedProduct.id] ? `You rated it ${userRatings[selectedProduct.id]} stars` : "Hover to preview, click to rate"}
+                    </p>
+                  </div>
                 </div>
-                <div className="relative">
-                  <textarea
-                    rows={1}
-                    placeholder={isMotivational[selectedProduct.id] ? "Deep thought..." : "Write a comment..."}
-                    value={commentInputs[selectedProduct.id] || ""}
-                    onChange={(e) => handleCommentChange(selectedProduct.id, e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), submitComment(selectedProduct.id))}
-                    className={`w-full pl-6 pr-14 py-4 bg-neutral-100 border-none rounded-2xl text-sm focus:ring-2 transition-all shadow-inner resize-none ${isMotivational[selectedProduct.id]
-                      ? "focus:ring-amber-500 bg-amber-50 placeholder-amber-400 text-amber-900"
-                      : "focus:ring-green-500 text-neutral-800"
-                      }`}
-                  />
-                  <button
-                    onClick={() => submitComment(selectedProduct.id)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-neutral-900 text-white rounded-xl hover:bg-green-600 transition-all shadow-lg active:scale-95 disabled:bg-neutral-200 disabled:shadow-none"
-                    disabled={!commentInputs[selectedProduct.id]?.trim()}
-                  >
-                    <Send size={18} />
-                  </button>
+
+                {/* RIGHT COLUMN: Community Hub */}
+                <div className="panel-right-column">
+                  <div className="feed-section" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div className="feed-header mb-6">
+                      <h3 className="text-xl font-black text-neutral-900 dark:text-white flex items-center gap-2">
+                        <MessageSquare className="size-5 text-emerald-600" />
+                        Community Hub
+                      </h3>
+                      <div className={`likes-badge ${socialData.likes[selectedProduct.id]?.isLiked ? "bg-red-50 text-red-600 dark:bg-red-950/20" : ""}`} 
+                           onClick={() => onToggleLike(selectedProduct.id)}
+                           style={{ cursor: 'pointer' }}>
+                        <Heart className={`size-3.5 ${socialData.likes[selectedProduct.id]?.isLiked ? "fill-red-500" : ""}`} />
+                        {socialData.likes[selectedProduct.id]?.count || 0}
+                      </div>
+                    </div>
+
+                    <div className="feed-container custom-scrollbar">
+                      {socialData.comments[selectedProduct.id]?.length === 0 ? (
+                        <div className="empty-feed">
+                          <Sparkles className="size-8 mx-auto text-neutral-200 mb-3" />
+                          <p className="text-neutral-400 font-medium">Be the first to share your thoughts!</p>
+                        </div>
+                      ) : (
+                        socialData.comments[selectedProduct.id]?.map((c, i) => {
+                          const avatarBg = getAvatarColor(c.userName || "Guest");
+                          const initial = (c.userName || "G")[0];
+                          return (
+                            <motion.div
+                              key={i}
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className={`feed-comment ${c.isMotivational ? "motivational" : ""}`}
+                            >
+                              <div className="comment-body">
+                                <div className="flex gap-3 w-full">
+                                  <div className="comment-avatar" style={{ backgroundColor: avatarBg }}>
+                                    {initial}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <p className="comment-username">{c.userName || "Organic Enthusiast"}</p>
+                                      <span className="text-[9px] font-bold text-neutral-400">Just Now</span>
+                                    </div>
+                                    <div className="relative">
+                                      {c.isMotivational && <Quote className="quote-icon size-3 absolute -top-1 -left-2 opacity-20" />}
+                                      <p className="comment-text">{c.text}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* New Inline Comment Area at the bottom of Right Column */}
+                    <div className="panel-footer">
+                      <div className="footer-options mb-3">
+                        <button
+                          onClick={() => setIsMotivational(prev => ({ ...prev, [selectedProduct.id]: !prev[selectedProduct.id] }))}
+                          className={`footer-toggle-btn ${isMotivational[selectedProduct.id] ? "active" : ""}`}
+                          style={{ fontSize: '11px', padding: '0.4rem 0.8rem' }}
+                        >
+                          {isMotivational[selectedProduct.id] ? "✨ Giving Vibes" : "Regular Comment"}
+                        </button>
+                      </div>
+                      <div className="footer-input-wrapper">
+                        <textarea
+                          rows={1}
+                          placeholder={isMotivational[selectedProduct.id] ? "Spread vibes..." : "Comment..."}
+                          value={commentInputs[selectedProduct.id] || ""}
+                          onChange={(e) => handleCommentChange(selectedProduct.id, e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), submitComment(selectedProduct.id))}
+                          className={`footer-input ${isMotivational[selectedProduct.id] ? "motivational" : ""}`}
+                        />
+                        <button
+                          onClick={() => submitComment(selectedProduct.id)}
+                          className="footer-send-btn"
+                          disabled={!commentInputs[selectedProduct.id]?.trim()}
+                        >
+                          <Send size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {paymentProduct && (
+        <PaymentDialog
+          product={paymentProduct}
+          quantity={1}
+          isOpen={isPaymentOpen}
+          onClose={() => {
+            setIsPaymentOpen(false);
+            setPaymentProduct(null);
+          }}
+        />
+      )}
     </div>
   );
 }

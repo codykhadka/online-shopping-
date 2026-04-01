@@ -6,7 +6,12 @@ import "@/styles/ui styles/WelcomePopup.css";
 // Shows once per browser session (disappears on page refresh next visit)
 const SESSION_KEY = "danphe_welcome_shown";
 
-export function WelcomePopup() {
+interface WelcomePopupProps {
+  userCount?: number;
+  visitorCount?: number;
+}
+
+export function WelcomePopup({ userCount = 0, visitorCount = 1 }: WelcomePopupProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -84,8 +89,8 @@ export function WelcomePopup() {
               <div className="trustPoints">
                 {[
                   { emoji: "🌿", text: "100% Organic & Certified Products" },
-                  { emoji: "🚚", text: "Free delivery on orders over Rs. 999" },
-                  { emoji: "✨", text: "5,000+ happy customers across Nepal" },
+                  { emoji: "✨", text: `${visitorCount} ${visitorCount === 1 ? 'person' : 'people'} visiting now` },
+                  { emoji: "👥", text: `${userCount.toLocaleString()}+ happy customers across Nepal` },
                 ].map((item, i) => (
                   <motion.div
                     key={i}

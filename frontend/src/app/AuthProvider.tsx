@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await response.json();
       if (result.success) {
         localStorage.setItem("danphe_organic_auth", JSON.stringify(result.user));
-        
+        localStorage.setItem("danphe_organic_token", result.token);
         // Link to admin session if user is an admin
         if (result.user.role === 'admin') {
           setAdminSession({

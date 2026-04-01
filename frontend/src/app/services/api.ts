@@ -21,3 +21,17 @@ export async function apiFetch<T>(
   return res.json() as Promise<T>;
 }
 
+export async function processTraditionalPayment(orderId: string, paymentMethod: string, amount: number, transactionId?: string) {
+  return apiFetch<{
+    success: boolean;
+    message: string;
+  }>(`/payments/traditional`, {
+    method: 'POST',
+    body: JSON.stringify({
+      orderId,
+      paymentMethod,
+      amount,
+      transactionId
+    })
+  });
+}

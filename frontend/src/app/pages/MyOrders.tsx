@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../AuthProvider";
 import { Link } from "react-router";
-import { Package, Clock, Truck, CheckCircle, ExternalLink, ArrowLeft, Loader2 } from "lucide-react";
+import { Package, Clock, Truck, CheckCircle, ExternalLink, ArrowLeft, Loader2, MapPin } from "lucide-react";
 import { Button } from "../components/ui/button";
 import "@/styles/MyOrders.css";
 
@@ -22,14 +22,10 @@ export function MyOrders() {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`${API_URL}/orders`)
+    fetch(`${API_URL}/users/${user.id}/orders`)
       .then(res => res.json())
       .then(data => {
-        // Filter backend orders by the logged in user's name
-        const userOrders = data.filter((o: any) => o.customerName === user.name);
-        // Sort descending
-        userOrders.reverse();
-        setOrders(userOrders);
+        setOrders(Array.isArray(data) ? data : []);
       })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
@@ -89,6 +85,10 @@ export function MyOrders() {
                         </div>
                         <p className="order-id">Order #{order.id}</p>
                         <p className="order-timestamp">{order.timestamp}</p>
+                        <div className="order-location mt-1 flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                          <MapPin size={12} className="text-red-400" />
+                          {order.location || "Sorting Hub"}
+                        </div>
                       </div>
                     </div>
 

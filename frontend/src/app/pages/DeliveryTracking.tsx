@@ -21,6 +21,7 @@ export function DeliveryTracking() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0); // 0 means Pending
+  const [orderData, setOrderData] = useState<any>(null);
 
   // Sync with Backend API
   useEffect(() => {
@@ -31,6 +32,7 @@ export function DeliveryTracking() {
         const allOrders = await response.json();
         const currentOrder = allOrders.find((o: any) => o.id === orderId);
         if (currentOrder) {
+          setOrderData(currentOrder);
           setCurrentStep(currentOrder.status + 1);
         }
       } catch (err) {
@@ -74,14 +76,14 @@ export function DeliveryTracking() {
           color="text-blue-600 bg-blue-50" // Keeping inline tailwind for colors passed as props for now as StatusCard uses them directly for className construction in original
         />
         <StatusCard
-          label="Shipping From"
-          value="Kathmandu Hub"
+          label="Current Location"
+          value={orderData?.location || "Kathmandu Hub"}
           icon={MapPin}
-          color="text-purple-600 bg-purple-50" // Same here
+          color="text-purple-600 bg-purple-50"
         />
         <StatusCard
           label="Courier"
-          value="Ram Bahadur"
+          value={orderData?.assigned_to || "Ram Bahadur"}
           icon={User}
           color="text-orange-600 bg-orange-50" // Same here
         />
@@ -153,7 +155,7 @@ export function DeliveryTracking() {
               Delivery Address
             </h3>
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 mb-4" style={{ backgroundColor: '#f8fafc' }}>
-              <p className="text-sm font-bold text-slate-800">Baluwatar-04, Kathmandu</p>
+              <p className="text-sm font-bold text-slate-800">{orderData?.address || "Baluwatar-04, Kathmandu"}</p>
               <p className="text-xs text-slate-500 mt-1">Near Speaker's House, Nepal</p>
             </div>
             <Button

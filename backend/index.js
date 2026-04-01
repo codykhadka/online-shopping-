@@ -6,6 +6,9 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcryptjs');
 const http = require('http');
 const { Server } = require('socket.io');
+const { connectDB } = require('./db');
+const Product = require('./Product').default;
+const User = require('./User').default;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +18,9 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' }
 });
+
+// Connect to MongoDB
+connectDB();
 
 // Map of socketId -> userId for presence tracking
 const socketToUser = new Map();
@@ -29,45 +35,26 @@ app.use(express.json({ limit: '50mb' }));
 // ── SQLite Database Setup ─────────────────────────────────────────────────────
 const db = new Database(path.join(__dirname, 'database.sqlite'));
 
-// db.exec("DROP TABLE IF EXISTS users");
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    name         TEXT    NOT NULL,
-    username     TEXT    NOT NULL UNIQUE,
-    password     TEXT    NOT NULL,
-    role         TEXT    DEFAULT 'user',
-    email        TEXT    UNIQUE,
-    phone        TEXT,
-    avatar       TEXT,
-    reset_token  TEXT,
-    token_expiry TEXT,
-    created_at   TEXT    DEFAULT (datetime('now'))
-  )
-`);
-
-if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'avatar')) {
-  db.exec("ALTER TABLE users ADD COLUMN avatar TEXT");
-}
-if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'phone')) {
-  db.exec("ALTER TABLE users ADD COLUMN phone TEXT");
-}
-if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'reset_token')) {
-  db.exec("ALTER TABLE users ADD COLUMN reset_token TEXT");
-}
-if (!db.prepare("PRAGMA table_info(users)").all().some(col => col.name === 'token_expiry')) {
-  db.exec("ALTER TABLE users ADD COLUMN token_expiry TEXT");
-}
-
-// Seed Admin User
-
-const adminCount = db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'admin'").get();
-if (adminCount.c === 0) {
-  const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
-  db.prepare("INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)").run('Root Admin', ADMIN_USERNAME, hashedPassword, 'admin');
-  console.log(`[SEED] Admin user created: ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
-}
+// Seed Admin User in MongoDB
+const seedAdmin = async () => {
+  try {
+    const adminCount = await User.countDocuments({ role: 'admin' });
+    if (adminCount === 0) {
+      const hashedPassword = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+      const admin = new User({
+        name: 'Root Admin',
+        username: ADMIN_USERNAME,
+        password: hashedPassword,
+        role: 'admin'
+      });
+      await admin.save();
+      console.log(`[SEED] Admin user created in MongoDB: ${ADMIN_USERNAME}`);
+    }
+  } catch (err) {
+    console.error("Admin seeding failed:", err);
+  }
+};
+seedAdmin();
 
 // Create products table (persists across restarts)
 db.exec(`
@@ -141,16 +128,10 @@ db.exec(`
     timestamp    TEXT    DEFAULT (datetime('now')),
     address      TEXT    NOT NULL,
     phone        TEXT    NOT NULL,
-    user_id      INTEGER DEFAULT NULL,
-    assigned_to  INTEGER DEFAULT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(assigned_to) REFERENCES users(id)
+    user_id      TEXT    DEFAULT NULL,
+    assigned_to  TEXT    DEFAULT NULL
   )
 `);
-
-if (!db.prepare("PRAGMA table_info(orders)").all().some(col => col.name === 'user_id')) {
-  db.exec("ALTER TABLE orders ADD COLUMN user_id INTEGER");
-}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS notifications (
@@ -179,6 +160,44 @@ if (configCount.c === 0) {
   insert.run('delivery_charge_express', '300');
   insert.run('currency', 'Rs.');
 }
+
+// ── Product Comments Table ───────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS product_comments (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id   TEXT    NOT NULL,
+    user_id      TEXT    NOT NULL,
+    user_name    TEXT    NOT NULL,
+    text         TEXT    NOT NULL,
+    is_motivational INTEGER DEFAULT 0,
+    created_at   TEXT    DEFAULT (datetime('now'))
+  )
+`);
+
+// GET all comments for a product
+app.get('/api/products/:id/comments', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM product_comments WHERE product_id = ? ORDER BY created_at ASC').all(req.params.id);
+    res.json(rows.map(r => ({ ...r, isMotivational: r.is_motivational === 1 })));
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST a new comment
+app.post('/api/products/:id/comments', (req, res) => {
+  const { user_id, user_name, text, isMotivational } = req.body;
+  if (!text?.trim()) return res.status(400).json({ success: false, error: 'Comment text required.' });
+  try {
+    const result = db.prepare(
+      'INSERT INTO product_comments (product_id, user_id, user_name, text, is_motivational) VALUES (?, ?, ?, ?, ?)'
+    ).run(req.params.id, user_id || 'guest', user_name || 'Anonymous', text.trim(), isMotivational ? 1 : 0);
+    const row = db.prepare('SELECT * FROM product_comments WHERE id = ?').get(result.lastInsertRowid);
+    res.json({ success: true, comment: { ...row, isMotivational: row.is_motivational === 1 } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // ── Persistent Chat Tables ────────────────────────────────────────────────────
 db.exec(`
@@ -212,13 +231,13 @@ app.get('/', (req, res) => {
 });
 
 // ── Admin Auth ────────────────────────────────────────────────────────────────
-app.post('/api/auth/admin/login', (req, res) => {
+app.post('/api/auth/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = db.prepare("SELECT * FROM users WHERE username = ? AND role = 'admin'").get(username);
+    const user = await User.findOne({ username, role: 'admin' });
 
     if (user && bcrypt.compareSync(password, user.password)) {
-      return res.json({ success: true, admin: { username: user.username, name: user.name, role: 'admin', avatar: user.avatar } });
+      return res.json({ success: true, admin: { id: user._id, username: user.username, name: user.name, role: 'admin', avatar: user.avatar } });
     }
     return res.status(401).json({ success: false, error: 'Invalid admin credentials.' });
   } catch (err) {
@@ -227,108 +246,84 @@ app.post('/api/auth/admin/login', (req, res) => {
 });
 
 // ── User Auth Routes ──────────────────────────────────────────────────────────
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   const { name, username, password, phone, email } = req.body;
   if (!name || !username || !password) return res.status(400).json({ success: false, error: 'Name, username, and password are required.' });
-  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
-  if (existing) return res.status(400).json({ success: false, error: 'Username already exists. Please choose another.' });
-  const hashedPassword = bcrypt.hashSync(password, 10);
+
   try {
-    const result = db.prepare('INSERT INTO users (name, username, password, phone, email) VALUES (?, ?, ?, ?, ?)').run(name, username, hashedPassword, phone || null, email || null);
-    res.json({ success: true, user: { id: result.lastInsertRowid, name, username, phone, email } });
+    const existing = await User.findOne({ username });
+    if (existing) return res.status(400).json({ success: false, error: 'Username already exists.' });
+
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const user = new User({ name, username, password: hashedPassword, phone, email });
+    await user.save();
+
+    res.json({ success: true, user: { id: user._id, name, username, phone, email } });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Could not register user: ' + err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ success: false, error: 'Username and password are required.' });
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
-  if (!bcrypt.compareSync(password, user.password)) return res.status(401).json({ success: false, error: 'Invalid username or password.' });
-  res.json({ success: true, user: { id: user.id, name: user.name, username: user.username, phone: user.phone, email: user.email, avatar: user.avatar } });
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ success: false, error: 'Invalid credentials.' });
+    }
+    res.json({ success: true, user: { id: user._id, name: user.name, username: user.username, phone: user.phone, email: user.email, avatar: user.avatar } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.post('/api/auth/social-login', async (req, res) => {
-  const { provider, token, name, email, profilePic } = req.body;
-  if (!provider || !token || !email) {
-    return res.status(400).json({ success: false, error: 'Provider, token, and email are required.' });
-  }
-
+  const { email, name, profilePic } = req.body;
   try {
-    // In a production environment, we would verify the token with the provider here.
-    // E.g., for Google: const ticket = await client.verifyIdToken({ idToken: token, audience: GOOGLE_CLIENT_ID });
-
-    // Check if user exists
-    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-
+    let user = await User.findOne({ email });
     if (!user) {
-      // Create new user if they don't exist
       const username = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
-      const randomPassword = Math.random().toString(36).substr(2, 10);
-      const hashedPassword = bcrypt.hashSync(randomPassword, 10);
-
-      const result = db.prepare('INSERT INTO users (name, username, password, email, avatar) VALUES (?, ?, ?, ?, ?)')
-        .run(name || 'Social User', username, hashedPassword, email, profilePic || null);
-
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
-    } else if (user) {
-      // Update existing user with social info to keep profile in sync
-      db.prepare('UPDATE users SET name = ?, avatar = ? WHERE id = ?')
-        .run(name || user.name, profilePic || user.avatar, user.id);
-      // Refresh user data
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+      user = new User({ name, username, email, avatar: profilePic, password: 'social-login-no-password' });
+      await user.save();
     }
-
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        name: user.name,
-        username: user.username,
-        phone: user.phone,
-        email: user.email,
-        avatar: user.avatar
-      }
-    });
+    res.json({ success: true, user: { id: user._id, name: user.name, username: user.username, avatar: user.avatar } });
   } catch (err) {
     console.error('Social Login Error:', err);
-    res.status(500).json({ success: false, error: 'Social authentication failed: ' + err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ── Account Recovery Protocols ────────────────────────────────────────────────
-app.post('/api/auth/forgot-password', (req, res) => {
+app.post('/api/auth/forgot-password', async (req, res) => {
   const { username } = req.body;
   try {
-    const user = db.prepare('SELECT id, username FROM users WHERE username = ?').get(username);
-    if (!user) return res.status(404).json({ success: false, error: 'Identity not found.' });
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ success: false, error: 'User not found.' });
 
-    // Generate a secure 6-digit protocol token
     const token = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+    user.reset_token = token;
+    user.token_expiry = new Date(Date.now() + 3600000);
+    await user.save();
 
-    db.prepare('UPDATE users SET reset_token = ?, token_expiry = ? WHERE id = ?').run(token, expiry, user.id);
-
-    // IMPORTANT: In a real app, this would be sent via email.
-    // For this demonstration, we log it to the console for the user to retrieve.
-    console.log(`\n[SECURITY PROTOCOL] Recovery Token for @${username}: ${token}\n`);
-
-    res.json({ success: true, message: 'Recovery token dispatched.' });
+    console.log(`[RECOVERY] Token for @${username}: ${token}`);
+    res.json({ success: true, message: 'Token dispatched.' });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Protocol initiation failed.' });
   }
 });
 
-app.post('/api/auth/reset-password', (req, res) => {
+app.post('/api/auth/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
   try {
-    const user = db.prepare('SELECT id FROM users WHERE reset_token = ? AND token_expiry > ?').get(token, new Date().toISOString());
+    const user = await User.findOne({ reset_token: token, token_expiry: { $gt: Date.now() } });
     if (!user) return res.status(400).json({ success: false, error: 'Invalid or expired protocol token.' });
 
-    const hashedPassword = bcrypt.hashSync(newPassword, 10);
-    db.prepare('UPDATE users SET password = ?, reset_token = NULL, token_expiry = NULL WHERE id = ?').run(hashedPassword, user.id);
+    user.password = bcrypt.hashSync(newPassword, 10);
+    user.reset_token = undefined;
+    user.token_expiry = undefined;
+    await user.save();
 
     res.json({ success: true, message: 'Identity restored successfully.' });
   } catch (err) {
@@ -336,9 +331,60 @@ app.post('/api/auth/reset-password', (req, res) => {
   }
 });
 
+// ── Admin User Management (MongoDB) ──────────────────────────────────────────
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const users = await User.find().lean();
+    const result = users.map(user => {
+      const orders = db.prepare('SELECT * FROM orders WHERE user_id = ?').all(user._id.toString());
+      return { ...user, id: user._id, orders };
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/personnel', async (req, res) => {
+  try {
+    const rows = await User.find({ role: { $in: ['delivery', 'admin'] } }).select('name role _id').lean();
+    res.json(rows.map(p => ({ ...p, id: p._id, status: 'Online', lastActive: new Date().toISOString() })));
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ── API Discovery ─────────────────────────────────────────────────────────────
 app.get('/api', (req, res) => {
   res.json({ status: 'active', message: 'Danphe Organic API is running', version: '2.0.0' });
+});
+
+// ── Payment Routes (Traditional/Manual) ──────────────────────────────────────
+app.post('/api/payments/traditional', (req, res) => {
+  const { orderId, paymentMethod, amount, transactionId } = req.body;
+
+  if (!orderId || !amount) {
+    return res.status(400).json({ success: false, error: 'Order ID and amount are required.' });
+  }
+
+  try {
+    const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+
+    // Update order status to 0 (Confirmed)
+    db.prepare('UPDATE orders SET status = 0 WHERE id = ?').run(orderId);
+
+    // Create a notification for the admin
+    db.prepare('INSERT INTO notifications (title, message, type) VALUES (?, ?, ?)')
+      .run('Payment Received', `Traditional payment of ${amount} for Order #ORD-${orderId} logged.`, 'info');
+
+    console.log(`[PAYMENT] Success for Order ${orderId}: ${amount} via ${paymentMethod}`);
+    res.json({ success: true, message: 'Payment recorded successfully.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Payment processing failed: ' + err.message });
+  }
 });
 
 // ── Newsletter Subscription ───────────────────────────────────────────────────
@@ -370,53 +416,55 @@ app.post('/api/subscribe', (req, res) => {
   }
 });
 
-// ── Product Routes (SQLite — persists across restarts) ───────────────────────
-app.get('/api/products', (req, res) => {
-  const rows = db.prepare('SELECT * FROM products ORDER BY id ASC').all();
-  res.json(rows.map(rowToProduct));
+// ── Product Routes (MongoDB) ────────────────────────────────────────────────
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: 1 });
+    // Map _id to id for frontend compatibility
+    res.json(products.map(p => ({ ...p.toObject(), id: p._id })));
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.post('/api/products', (req, res) => {
-  const { name, description = '', price, discountPrice, category, image = '/images/honey_jar.png', features = [], inStock = true } = req.body;
-  if (!name || !price || !category) return res.status(400).json({ success: false, error: 'Name, price, and category are required.' });
-  const featuresJson = JSON.stringify(Array.isArray(features) ? features : features.split(',').map(f => f.trim()).filter(Boolean));
-  const result = db.prepare(
-    'INSERT INTO products (name, description, price, discountPrice, category, image, rating, inStock, features) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)'
-  ).run(name, description, parseFloat(price), discountPrice ? parseFloat(discountPrice) : null, category, image, inStock ? 1 : 0, featuresJson);
-  const newProduct = db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
-  res.json({ success: true, product: rowToProduct(newProduct) });
+app.post('/api/products', async (req, res) => {
+  try {
+    const { name, description, price, discountPrice, category, image, features, inStock } = req.body;
+    if (!name || !price || !category) return res.status(400).json({ success: false, error: 'Name, price, and category are required.' });
+
+    const product = new Product({
+      name, description, category, image,
+      price: parseFloat(price),
+      discountPrice: discountPrice ? parseFloat(discountPrice) : null,
+      features: Array.isArray(features) ? features : (features?.split(',').map(f => f.trim()).filter(Boolean) || []),
+      inStock: inStock === undefined ? true : !!inStock
+    });
+
+    await product.save();
+    res.json({ success: true, product: { ...product.toObject(), id: product._id } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.put('/api/products/:id', (req, res) => {
-  const { id } = req.params;
-  const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(Number(id));
-  if (!existing) return res.status(404).json({ success: false, error: 'Product not found.' });
-  const { name, description, price, discountPrice, category, image, features, inStock } = req.body;
-  const updated = {
-    name: name !== undefined ? name : existing.name,
-    description: description !== undefined ? description : existing.description,
-    price: price !== undefined ? parseFloat(price) : existing.price,
-    discountPrice: discountPrice !== undefined ? (discountPrice ? parseFloat(discountPrice) : null) : existing.discountPrice,
-    category: category !== undefined ? category : existing.category,
-    image: image !== undefined ? image : existing.image,
-    inStock: inStock !== undefined ? (inStock ? 1 : 0) : existing.inStock,
-    features: features !== undefined
-      ? JSON.stringify(Array.isArray(features) ? features : features.split(',').map(f => f.trim()).filter(Boolean))
-      : existing.features,
-  };
-  db.prepare(
-    'UPDATE products SET name=?, description=?, price=?, discountPrice=?, category=?, image=?, inStock=?, features=? WHERE id=?'
-  ).run(updated.name, updated.description, updated.price, updated.discountPrice, updated.category, updated.image, updated.inStock, updated.features, Number(id));
-  const row = db.prepare('SELECT * FROM products WHERE id = ?').get(Number(id));
-  res.json({ success: true, product: rowToProduct(row) });
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(req.params.id, { ...req.body }, { new: true });
+    if (!updatedProduct) return res.status(404).json({ success: false, error: 'Product not found.' });
+    res.json({ success: true, product: { ...updatedProduct.toObject(), id: updatedProduct._id } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-app.delete('/api/products/:id', (req, res) => {
-  const { id } = req.params;
-  const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(Number(id));
-  if (!existing) return res.status(404).json({ success: false, error: 'Product not found.' });
-  db.prepare('DELETE FROM products WHERE id = ?').run(Number(id));
-  res.json({ success: true, product: rowToProduct(existing) });
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+    if (!deletedProduct) return res.status(404).json({ success: false, error: 'Product not found.' });
+    res.json({ success: true, product: { ...deletedProduct.toObject(), id: deletedProduct._id } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ── Order Routes (SQLite) ──────────────────────────────────────────────────────
@@ -448,19 +496,6 @@ app.get('/api/users/:userId/orders', (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY timestamp DESC').all(userId);
     res.json(rows);
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-app.get('/api/admin/users', (req, res) => {
-  try {
-    const users = db.prepare('SELECT id, name, username, email, password, phone, avatar, role, created_at FROM users').all();
-    const result = users.map(user => {
-      const orders = db.prepare('SELECT * FROM orders WHERE user_id = ?').all(user.id);
-      return { ...user, orders };
-    });
-    res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -550,23 +585,6 @@ app.post('/api/admin/config', (req, res) => {
   }
 });
 
-// ── Personnel Routes ──────────────────────────────────────────────────────────
-app.get('/api/admin/personnel', (req, res) => {
-  try {
-    // Strictly select only non-sensitive public fields
-    const rows = db.prepare("SELECT id, name, role FROM users WHERE role = 'delivery' OR role = 'admin'").all();
-    // Add some mock status for now
-    const personnel = rows.map(p => ({
-      ...p,
-      status: Math.random() > 0.5 ? 'Online' : 'Offline',
-      lastActive: new Date().toISOString()
-    }));
-    res.json(personnel);
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 // ── Global Error Shield ───────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('\x1b[31m[CRITICAL PROTOCOL FAILURE]\x1b[0m', err.stack);
@@ -589,15 +607,15 @@ io.on('connection', (socket) => {
   socket.on('join_admin', () => {
     socket.join('adminRoom');
     console.log(`[SOCKET] Admin joined adminRoom: ${socket.id}`);
-    
+
     // Fetch all sessions and messages from database
     const sessionsRows = db.prepare("SELECT * FROM chat_sessions ORDER BY lastActive DESC").all();
     const activeChatSessions = {};
-    
+
     sessionsRows.forEach(row => {
       // Check if this user has any active sockets
       const isOnline = Array.from(socketToUser.values()).includes(row.userId);
-      
+
       const messages = db.prepare("SELECT text, isUser, timestamp FROM chat_messages WHERE userId = ? ORDER BY id ASC").all(row.userId);
       activeChatSessions[row.userId] = {
         userId: row.userId,
@@ -612,19 +630,19 @@ io.on('connection', (socket) => {
         }))
       };
     });
-    
+
     socket.emit('sync_sessions', activeChatSessions);
   });
 
   // User identifies themselves upon connection to sync their latest socketId/name
   socket.on('user_identify', (data) => {
     console.log(`[SOCKET] User identity received: ${data.userName} (${data.userId})`);
-    
+
     // Map this socket to this specific user ID
     socketToUser.set(socket.id, data.userId);
 
     const timestamp = new Date().toISOString();
-    
+
     // Update session record with latest socketId and potentially updated userName
     db.prepare(`
       INSERT INTO chat_sessions (userId, userName, socketId, lastActive) 
@@ -657,10 +675,10 @@ io.on('connection', (socket) => {
   // Handle incoming messages from users
   socket.on('user_message', (data) => {
     console.log(`[SOCKET] User message from ${data.userId || 'Guest'}: ${data.text}`);
-    
+
     const timestamp = new Date().toISOString();
     const userName = data.userName || 'Guest';
-    
+
     // Save or update session
     db.prepare(`
       INSERT INTO chat_sessions (userId, userName, socketId, lastActive) 
@@ -670,31 +688,31 @@ io.on('connection', (socket) => {
       socketId=excluded.socketId, 
       lastActive=excluded.lastActive
     `).run(data.userId, userName, socket.id, timestamp);
-    
+
     // Save message
     db.prepare('INSERT INTO chat_messages (userId, text, isUser, timestamp) VALUES (?, ?, 1, ?)')
       .run(data.userId, data.text, timestamp);
 
     // Broadcast to admins
-    io.to('adminRoom').emit('user_message', { 
-      ...data, 
-      socketId: socket.id, 
-      timestamp: timestamp 
+    io.to('adminRoom').emit('user_message', {
+      ...data,
+      socketId: socket.id,
+      timestamp: timestamp
     });
   });
 
   // Handle replies from admin to a specific user
   socket.on('admin_message', (data) => {
     console.log(`[SOCKET] Admin reply to ${data.targetSocketId}: ${data.text}`);
-    
+
     const timestamp = new Date().toISOString();
     const userId = data.userId; // Frontend now sends userId
-    
+
     if (userId) {
       db.prepare('UPDATE chat_sessions SET lastActive = ? WHERE userId = ?').run(timestamp, userId);
       db.prepare('INSERT INTO chat_messages (userId, text, isUser, timestamp) VALUES (?, ?, 0, ?)')
         .run(userId, data.text, timestamp);
-        
+
       // Broadcast the reply to ALL admins (including the sender for sync)
       io.to('adminRoom').emit('admin_message_received', {
         userId: userId,
@@ -702,11 +720,11 @@ io.on('connection', (socket) => {
         timestamp: timestamp
       });
     }
-    
+
     if (data.targetSocketId) {
-      io.to(data.targetSocketId).emit('admin_reply', { 
-        text: data.text, 
-        timestamp: timestamp 
+      io.to(data.targetSocketId).emit('admin_reply', {
+        text: data.text,
+        timestamp: timestamp
       });
     }
   });
@@ -716,7 +734,7 @@ io.on('connection', (socket) => {
     if (userId) {
       console.log(`[SOCKET] User offline: ${userId}`);
       socketToUser.delete(socket.id);
-      
+
       // Notify admins that this specific user went offline
       io.to('adminRoom').emit('update_user_status', {
         userId: userId,

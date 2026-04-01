@@ -13,6 +13,7 @@ import { LoginPage } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
 import { Ratings } from "./pages/Ratings";
 import { HowToMake } from "./pages/HowToMake";
+import { FeaturedProducts } from "./pages/FeaturedProducts";
 import { AdminConfig } from "./pages/AdminConfig";
 import { AdminChat } from "./pages/AdminChat";
 import { AdminUsers } from "./pages/AdminUsers";
@@ -37,6 +38,8 @@ interface RouterContext {
   products: Product[];
   isLoading: boolean;
   error: string | null;
+  userCount: number;
+  visitorCount: number;
 }
 
 export function useRouterContext() {
@@ -45,18 +48,14 @@ export function useRouterContext() {
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-// Global Layout providing Auth to all children
+// Global Layout providing common pieces to all children
 function GlobalLayout() {
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
-
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <AuthProvider>
-        <Outlet />
-        <LoginModal />
-        <Toaster position="top-center" />
-      </AuthProvider>
-    </GoogleOAuthProvider>
+    <>
+      <Outlet />
+      <LoginModal />
+      <Toaster position="top-center" />
+    </>
   );
 }
 
@@ -101,8 +100,8 @@ export const router = createBrowserRouter([
           {
             index: true,
             Component: () => {
-              const { onAddToCart, userRatings, handleRate, products, isLoading, error } = useRouterContext();
-              return <Home onAddToCart={onAddToCart} userRatings={userRatings} onRate={handleRate} products={products} isLoading={isLoading} error={error} />;
+              const { onAddToCart, userRatings, handleRate, products, socialData, handleToggleLike, isLoading, error, userCount, visitorCount } = useRouterContext();
+              return <Home onAddToCart={onAddToCart} userRatings={userRatings} onRate={handleRate} products={products} socialData={socialData} onToggleLike={handleToggleLike} isLoading={isLoading} error={error} userCount={userCount} visitorCount={visitorCount} />;
             },
           },
           {
@@ -126,7 +125,9 @@ export const router = createBrowserRouter([
                 socialData,
                 handleToggleLike,
                 handleAddComment,
-                products
+                products,
+                userCount,
+                visitorCount
               } = useRouterContext();
               return (
                 <Ratings
@@ -137,13 +138,22 @@ export const router = createBrowserRouter([
                   onToggleLike={handleToggleLike}
                   onAddComment={handleAddComment}
                   products={products}
+                  userCount={userCount}
+                  visitorCount={visitorCount}
                 />
               );
             },
           },
           {
             path: "how-to-make",
-            Component: HowToMake,
+            Component: () => {
+              const { onAddToCart, products } = useRouterContext();
+              return <HowToMake onAddToCart={onAddToCart} products={products} />;
+            },
+          },
+          {
+            path: "featured-products",
+            Component: FeaturedProducts,
           },
           {
             path: "profile",

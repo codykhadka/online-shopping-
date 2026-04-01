@@ -9,6 +9,7 @@ import { Checkbox } from "../components/ui/checkbox";
 import { getOrders, updateOrderStatus, clearOrders, Order } from "../utils/storage";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
+import { getAdminSession } from "../utils/adminAuth";
 import "@/styles/AdminTracker.css";
 
 const statusLabels = [
@@ -49,6 +50,9 @@ export function AdminTracker() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState(false);
+
+  const admin = getAdminSession();
+  const adminName = admin?.name || admin?.username || 'Admin';
 
   // Sound effect simulation for notifications
   const playNotification = (count: number, lastOrder?: Order) => {
@@ -98,16 +102,20 @@ export function AdminTracker() {
     });
   }, [orders, searchQuery, statusFilter]);
 
-  const handleUpdateStatus = async (orderIds: string[], newStatus: number) => {
+  const handleUpdateStatus = async (orderIds: string[], newStatus: number, location?: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    await Promise.all(orderIds.map(id => updateOrderStatus(id, newStatus)));
+    await Promise.all(orderIds.map(id => updateOrderStatus(id, newStatus, location)));
 
-    const newItems = orderIds.map(id => ({
-      id: Math.random().toString(36).substr(2, 9),
-      orderId: id,
-      action: newStatus === 0 ? "Order Accepted" : `Status set to ${statusLabels[newStatus]}`,
-      timestamp
-    }));
+    const newItems = orderIds.map(id => {
+      const order = orders.find(o => o.id === id);
+      const pName = order ? ` - ${order.productName}` : '';
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        orderId: id,
+        action: newStatus === 0 ? `Accepted by ${adminName}${pName}` : `Status ${statusLabels[newStatus]} by ${adminName}${location ? ' (' + location + ')' : ''}`,
+        timestamp
+      };
+    });
 
     setActivities(prev => [...newItems, ...prev].slice(0, 50));
     loadOrders();
@@ -162,6 +170,7 @@ export function AdminTracker() {
       <div className="telemetry-bar">
         <span>Active Telemetry</span>
         <span className="last-updated">
+         {/* Already updated in storage.ts */}
           Last Updated: {lastRefreshed.toLocaleTimeString()}
         </span>
       </div>
@@ -198,8 +207,13 @@ export function AdminTracker() {
 
         <div className="filter-actions">
           {selectedOrderIds.length > 0 && (
-            <div className="selected-actions">
-              <Button size="sm" onClick={() => handleUpdateStatus(selectedOrderIds, 0)} className="accept-selected-btn">Accept Selected</Button>
+            <div className="selected-actions flex items-center gap-3">
+              <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20">
+                Admin {adminName}: {selectedOrderIds.length} Selected
+              </span>
+              <Button size="sm" onClick={() => handleUpdateStatus(selectedOrderIds, 0)} className="accept-selected-btn bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all">
+                Accept Selected
+              </Button>
             </div>
           )}
           <Button variant="ghost" size="sm" onClick={async () => { await clearOrders(); loadOrders(); }} className="reset-all-btn">
@@ -245,9 +259,21 @@ export function AdminTracker() {
                       <td>
                         <p className="personnel-name">{order.customerName}</p>
                         <p className="product-name">{order.productName}</p>
-                        <div className="address-info">
-                          <MapPin size={10} className="icon" />
-                          <span className="line-clamp-1">{order.address}</span>
+                        <div className="location-edit-group mt-1 flex items-center gap-2">
+                          <MapPin size={10} className="text-red-500" />
+                          <input 
+                            type="text" 
+                            defaultValue={order.location || "Sorting Hub"}
+                            onBlur={(e) => {
+                              if (e.target.value !== order.location) {
+                                handleUpdateStatus([order.id], order.status, e.target.value);
+                              }
+                            }}
+                            className="bg-transparent border-b border-zinc-700 text-[10px] text-zinc-400 focus:text-white transition-colors outline-none w-32"
+                          />
+                        </div>
+                        <div className="address-info mt-1">
+                          <span className="line-clamp-1 italic text-[9px] text-zinc-500 opacity-60">{order.address}</span>
                         </div>
                       </td>
                       <td>

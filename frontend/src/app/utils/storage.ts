@@ -5,10 +5,11 @@ export interface Order {
   productName: string;
   price: number;
   status: number; // -1: Pending, 0: Confirmed, 1: Prepared, 2: Shipping, 3: Completed
+  location: string;
   timestamp: string;
   address: string;
   phone: string;
-  user_id?: number | null;
+  user_id?: string | null;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
@@ -49,12 +50,12 @@ export const saveOrder = async (order: Order) => {
   window.dispatchEvent(new Event('storage'));
 };
 
-export const updateOrderStatus = async (orderId: string, status: number) => {
+export const updateOrderStatus = async (orderId: string, status: number, location?: string) => {
   try {
     await fetch(`${API_URL}/orders/${orderId}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, location }),
     });
   } catch (err) {
     console.error("Failed to update order status on API", err);

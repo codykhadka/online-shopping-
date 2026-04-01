@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { howToGuides, HowToGuide } from "../data/how-to-guides";
+import { Product } from "../data/products";
 import { Button } from "../components/ui/button";
 import {
   Clock,
@@ -18,6 +19,8 @@ import {
   Search,
   Loader2,
   Leaf,
+  ShoppingBag,
+  ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
 import "@/styles/HowToMake.css";
@@ -29,6 +32,11 @@ const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 interface Message {
   role: "user" | "assistant";
   text: string;
+}
+
+interface HowToMakeProps {
+  onAddToCart: (product: Product) => void;
+  products: Product[];
 }
 
 // ─── AI Knowledge Base ────────────────────────────────────────────────────────
@@ -68,7 +76,17 @@ function DifficultyBadge({ level }: { level: HowToGuide["difficulty"] }) {
 }
 
 // ─── Guide Detail Modal ───────────────────────────────────────────────────────
-function GuideModal({ guide, onClose }: { guide: HowToGuide; onClose: () => void }) {
+function GuideModal({
+  guide,
+  onClose,
+  product,
+  onAddToCart
+}: {
+  guide: HowToGuide;
+  onClose: () => void;
+  product?: Product;
+  onAddToCart: (p: Product) => void;
+}) {
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -177,6 +195,25 @@ function GuideModal({ guide, onClose }: { guide: HowToGuide; onClose: () => void
               ))}
             </div>
           </div>
+
+          {/* Buy Now Section */}
+          {product && (
+            <div className="guide-modal-buy-section">
+              <div className="product-info-mini">
+                <img src={product.image} alt={product.name} className="product-thumb" />
+                <div className="text-content">
+                  <p className="product-name">{product.name}</p>
+                  <p className="product-price">Rs. {product.price}</p>
+                </div>
+              </div>
+              <Button
+                onClick={() => { onAddToCart(product); toast.success(`${product.name} added to cart!`); }}
+                className="buy-now-btn"
+              >
+                <ShoppingBag size={18} /> Buy Now
+              </Button>
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -184,7 +221,7 @@ function GuideModal({ guide, onClose }: { guide: HowToGuide; onClose: () => void
 }
 
 // ─── Guide Card ───────────────────────────────────────────────────────────────
-function GuideCard({ guide, onClick }: { guide: HowToGuide; onClick: () => void }) {
+function GuideCard({ guide, onClick, product, onAddToCart }: { guide: HowToGuide; onClick: () => void; product?: Product; onAddToCart: (p: Product) => void }) {
   return (
     <motion.div
       whileHover={{ y: -7, scale: 1.02 }}
@@ -222,6 +259,16 @@ function GuideCard({ guide, onClick }: { guide: HowToGuide; onClick: () => void 
             <ChefHat size={12} />
             {guide.instructions.length} Steps
           </span>
+          {product && (
+            <button
+              className="guide-card-buy-btn"
+              onClick={(e) => { e.stopPropagation(); onAddToCart(product); toast.success(`${product.name} added to cart!`); }}
+              title={`Buy ${product.name}`}
+            >
+              <ShoppingCart size={14} />
+              <span>Buy</span>
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
@@ -436,7 +483,7 @@ function FloatingAiChat() {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export function HowToMake() {
+export function HowToMake({ onAddToCart, products }: HowToMakeProps) {
   const [selectedGuide, setSelectedGuide] = useState<HowToGuide | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -478,6 +525,15 @@ export function HowToMake() {
       g.shortDescription.toLowerCase().includes(searchQuery.toLowerCase())
     )
     : howToGuides;
+
+  // Helper to find associated product for a guide
+  const getProductForGuide = (guide: HowToGuide) => {
+    if (!products) return undefined;
+    return products.find(p =>
+      p.id === (guide as any).productId ||
+      p.name.toLowerCase().includes(guide.title.toLowerCase().split(' ')[0])
+    );
+  };
 
   return (
     <motion.div
@@ -679,7 +735,12 @@ export function HowToMake() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, delay: i * 0.08 }}
                   >
-                    <GuideCard guide={guide} onClick={() => setSelectedGuide(guide)} />
+                    <GuideCard
+                      guide={guide}
+                      onClick={() => setSelectedGuide(guide)}
+                      product={getProductForGuide(guide)}
+                      onAddToCart={onAddToCart}
+                    />
                   </motion.div>
                 ))}
               </motion.div>
@@ -777,7 +838,12 @@ export function HowToMake() {
       {/* ── Guide Detail Modal ────────────────────────────────────────── */}
       <AnimatePresence>
         {selectedGuide && (
-          <GuideModal guide={selectedGuide} onClose={() => setSelectedGuide(null)} />
+          <GuideModal
+            guide={selectedGuide}
+            onClose={() => setSelectedGuide(null)}
+            product={getProductForGuide(selectedGuide)}
+            onAddToCart={onAddToCart}
+          />
         )}
       </AnimatePresence>
 

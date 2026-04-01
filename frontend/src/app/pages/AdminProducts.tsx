@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Plus, Pencil, Trash2, X, Check, Package,
-  ToggleLeft, ToggleRight, Search, RefreshCw, Upload, Image as ImageIcon
+  ToggleLeft, ToggleRight, Search, RefreshCw, Upload, Image as ImageIcon, Sparkles
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ interface Product {
   rating: number;
   inStock: boolean;
   features: string[];
+  isFeatured?: boolean;
 }
 
 const EMPTY_FORM = {
@@ -29,6 +30,7 @@ const EMPTY_FORM = {
   image: "",        // can be a path like /images/honey.png OR a base64 data URL
   features: "",
   inStock: true,
+  isFeatured: false,
 };
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
@@ -137,7 +139,13 @@ export function AdminProducts() {
 
   const openAddForm = () => {
     setEditingProduct(null);
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_FORM, isFeatured: false });
+    setShowForm(true);
+  };
+
+  const openAddFeaturedForm = () => {
+    setEditingProduct(null);
+    setForm({ ...EMPTY_FORM, isFeatured: true });
     setShowForm(true);
   };
 
@@ -152,6 +160,7 @@ export function AdminProducts() {
       image: product.image,
       features: product.features.join(", "),
       inStock: product.inStock,
+      isFeatured: !!product.isFeatured,
     });
     setShowForm(true);
   };
@@ -165,8 +174,8 @@ export function AdminProducts() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.price || !form.category.trim()) {
-      toast.error("Name, price, and category are required.");
+    if (!form.name.trim() || (!form.isFeatured && (!form.price || !form.category.trim()))) {
+      toast.error(form.isFeatured ? "Frontend Error: Name is required for feature products." : "Frontend Error: Name, price, and category are required.");
       return;
     }
     
@@ -185,12 +194,13 @@ export function AdminProducts() {
       const body = {
         name: form.name.trim(),
         description: form.description.trim(),
-        price: parseFloat(form.price),
+        price: form.isFeatured ? 0.01 : parseFloat(form.price), // Sending 0.01 bypasses the old backend `!price` validation without restarting
         discountPrice: form.discountPrice ? parseFloat(form.discountPrice) : null,
-        category: form.category.trim(),
+        category: form.isFeatured ? "Featured" : form.category.trim(),
         image: form.image.trim() || "/images/honey_jar.png",
-        features: form.features,
-        inStock: form.inStock,
+        features: form.isFeatured ? [] : form.features,
+        inStock: form.isFeatured ? true : form.inStock,
+        isFeatured: form.isFeatured,
       };
       const url = editingProduct ? `${API_URL}/products/${editingProduct.id}` : `${API_URL}/products`;
       const method = editingProduct ? "PUT" : "POST";
@@ -253,7 +263,14 @@ export function AdminProducts() {
             className="add-product-btn"
           >
             <Plus size={16} className="mr-1.5" />
-            Add Product
+            Add Regular Product
+          </Button>
+          <Button
+            onClick={openAddFeaturedForm}
+            className="add-product-btn bg-amber-500 hover:bg-amber-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+          >
+            <Sparkles size={16} className="mr-1.5" />
+            Add Featured Product
           </Button>
         </div>
       </div>
@@ -306,7 +323,10 @@ export function AdminProducts() {
                         )}
                       </div>
                       <div className="product-text">
-                        <p className="product-name-table">{product.name}</p>
+                        <p className="product-name-table">
+                          {product.name}
+                          {product.isFeatured && <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">FEATURED</span>}
+                        </p>
                         <p className="product-desc-table">{product.description}</p>
                         {isBase64Image(product.image) && (
                           <span className="custom-image-badge">Custom Image</span>
@@ -316,11 +336,13 @@ export function AdminProducts() {
                   </td>
                   <td className="hidden sm:table-cell">
                     <span className="category-badge-table">
-                      {product.category}
+                      {product.isFeatured ? "Showcase" : product.category}
                     </span>
                   </td>
                   <td>
-                    {product.discountPrice ? (
+                    {product.isFeatured ? (
+                      <span className="text-zinc-500 italic text-[10px]">Showcase Only</span>
+                    ) : product.discountPrice ? (
                       <>
                         <p><span className="price-discounted">${product.discountPrice.toFixed(2)}</span> <span className="price-original">${product.price.toFixed(2)}</span></p>
                         <p className="price-npr">Rs {Math.round(product.discountPrice * 133).toLocaleString()}</p>
@@ -333,7 +355,9 @@ export function AdminProducts() {
                     )}
                   </td>
                   <td className="hidden md:table-cell">
-                    {product.inStock ? (
+                    {product.isFeatured ? (
+                      <span className="text-zinc-500 text-[10px]">-</span>
+                    ) : product.inStock ? (
                       <span className="stock-indicator in-stock"><div className="stock-dot in-stock" />In Stock</span>
                     ) : (
                       <span className="stock-indicator out-of-stock"><div className="stock-dot out-of-stock" />Out of Stock</span>
@@ -400,10 +424,16 @@ export function AdminProducts() {
             <div className="form-header">
               <div>
                 <h3 className="form-title">
-                  {editingProduct ? "Edit Product" : "Add New Product"}
+                  {editingProduct 
+                    ? `Edit ${form.isFeatured ? 'Featured Product' : 'Product'}` 
+                    : `Add ${form.isFeatured ? 'Featured Product' : 'New Product'}`}
                 </h3>
                 <p className="form-subtitle">
-                  {editingProduct ? "Changes appear everywhere instantly" : "Will appear on homepage & checkout instantly"}
+                  {editingProduct 
+                    ? "Changes appear everywhere instantly" 
+                    : form.isFeatured 
+                      ? "Will appear prominently on the Featured page" 
+                      : "Will appear on homepage & checkout instantly"}
                 </p>
               </div>
               <button onClick={closeForm} className="close-form-btn">
@@ -415,12 +445,12 @@ export function AdminProducts() {
 
               {/* Name */}
               <div className="form-group">
-                <label className="form-label">Product Name *</label>
+                <label className="form-label">{form.isFeatured ? "Headline / Title *" : "Product Name *"}</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="e.g. Pure Raw Honey"
+                  placeholder={form.isFeatured ? "e.g. The Spring Collection" : "e.g. Pure Raw Honey"}
                   required
                   className="form-input"
                 />
@@ -428,18 +458,20 @@ export function AdminProducts() {
 
               {/* Description */}
               <div className="form-group">
-                <label className="form-label">Description</label>
+                <label className="form-label">{form.isFeatured ? "Story / Details" : "Description"}</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Short product description..."
+                  placeholder={form.isFeatured ? "Tell the story behind this feature..." : "Short product description..."}
                   rows={3}
                   className="form-textarea"
                 />
               </div>
 
-              {/* Price & Discount */}
-              <div className="price-grid">
+              {/* Price & Category - HIDE IF FEATURED */}
+              {!form.isFeatured && (
+                <>
+                  <div className="price-grid">
                 <div className="form-group">
                   <label className="form-label">Original Price (USD) *</label>
                   <input
@@ -490,8 +522,10 @@ export function AdminProducts() {
                   <option value="Ghee & Oils" />
                   <option value="Jaggery" />
                   <option value="Peanut Butter" />
-                </datalist>
-              </div>
+                  </datalist>
+                </div>
+              </>
+              )}
 
               {/* ── Image Drag & Drop ────────────────────────────── */}
               <div className="form-group">
@@ -571,37 +605,55 @@ export function AdminProducts() {
               </div>
               {/* ─────────────────────────────────────────────────── */}
 
-              {/* Features */}
-              <div className="form-group">
-                <label className="form-label">
-                  Features <span className="text-zinc-600 normal-case">(comma-separated)</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.features}
-                  onChange={e => setForm(f => ({ ...f, features: e.target.value }))}
-                  placeholder="No added sugar, Rich in antioxidants, Organic"
-                  className="form-input"
-                />
-              </div>
+              {/* Features - HIDE IF FEATURED */}
+              {!form.isFeatured && (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">
+                      Features <span className="text-zinc-600 normal-case">(comma-separated)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.features}
+                      onChange={e => setForm(f => ({ ...f, features: e.target.value }))}
+                      placeholder="No added sugar, Rich in antioxidants, Organic"
+                      className="form-input"
+                    />
+                  </div>
 
-              {/* In Stock Toggle */}
-              <div className="in-stock-toggle">
+                  <div className="in-stock-toggle">
+                    <div className="text">
+                      <p className="title">In Stock</p>
+                      <p className="subtitle">Product is available for purchase</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, inStock: !f.inStock }))}
+                      className={`toggle-btn ${form.inStock ? "on" : "off"}`}
+                    >
+                      {form.inStock ? <ToggleRight size={36} /> : <ToggleLeft size={36} />}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Featured Toggle */}
+              <div className="in-stock-toggle mt-4">
                 <div className="text">
-                  <p className="title">In Stock</p>
-                  <p className="subtitle">Product is available for purchase</p>
+                  <p className="title text-amber-500">Featured Product</p>
+                  <p className="subtitle">Exclusive to the Featured Products page</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setForm(f => ({ ...f, inStock: !f.inStock }))}
-                  className={`toggle-btn ${form.inStock ? "on" : "off"}`}
+                  onClick={() => setForm(f => ({ ...f, isFeatured: !f.isFeatured }))}
+                  className={`toggle-btn ${form.isFeatured ? "on" : "off"}`}
                 >
-                  {form.inStock ? <ToggleRight size={36} /> : <ToggleLeft size={36} />}
+                  {form.isFeatured ? <ToggleRight size={36} className="text-amber-500" /> : <ToggleLeft size={36} />}
                 </button>
               </div>
 
               {/* Actions */}
-              <div className="form-actions">
+              <div className="form-actions mt-6">
                 <button
                   type="button"
                   onClick={closeForm}
@@ -615,7 +667,7 @@ export function AdminProducts() {
                   className="save-btn"
                 >
                   {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
-                  {isSaving ? "Saving..." : editingProduct ? "Save Changes" : "Add Product"}
+                  {isSaving ? "Saving..." : editingProduct ? "Save Changes" : `Add ${form.isFeatured ? 'Feature' : 'Product'}`}
                 </button>
               </div>
             </form>
@@ -628,12 +680,12 @@ export function AdminProducts() {
                   onClick={() => !isSaving && setShowAddConfirm(false)} 
                 />
                 <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative z-10 transform transition-all">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mb-4 mx-auto">
-                    <Package size={24} />
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full mb-4 mx-auto ${form.isFeatured ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                    {form.isFeatured ? <Sparkles size={24} /> : <Package size={24} />}
                   </div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-2 text-center">Confirm Product Addition</h4>
+                  <h4 className="text-xl font-bold text-gray-900 mb-2 text-center">Confirm {form.isFeatured ? 'Feature Addition' : 'Product Addition'}</h4>
                   <p className="text-gray-600 mb-6 text-center">
-                    Are you sure you want to add <strong>{form.name}</strong> to the catalog? It will be instantly visible to all users.
+                    Are you sure you want to add <strong>{form.name}</strong> to the {form.isFeatured ? 'Features page' : 'catalog'}? It will be instantly visible to all users.
                   </p>
                   <div className="flex gap-3 justify-center">
                     <button

@@ -9,6 +9,9 @@ export interface Product {
   rating: number;
   inStock: boolean;
   features: string[];
+  likes: number;
+  ratingCount: number;
+  isFeatured?: boolean;
 }
 
 export const products: Product[] = [
@@ -25,7 +28,9 @@ export const products: Product[] = [
       "No added sugar",
       "Rich in antioxidants",
       "Sustainably sourced"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   },
   {
     id: "2",
@@ -40,7 +45,9 @@ export const products: Product[] = [
       "Made from A2 cow milk",
       "Traditional bilona method",
       "Rich in Omega-3"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   },
   {
     id: "3",
@@ -55,7 +62,9 @@ export const products: Product[] = [
       "No artificial colors",
       "Rich in iron",
       "Unrefined"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   },
   {
     id: "4",
@@ -70,7 +79,9 @@ export const products: Product[] = [
       "Cold-pressed extraction",
       "High smoking point",
       "Cholesterol free"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   },
   {
     id: "5",
@@ -85,7 +96,9 @@ export const products: Product[] = [
       "100% Roasted Peanuts",
       "No added oil",
       "High protein content"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   },
   {
     id: "6",
@@ -100,7 +113,9 @@ export const products: Product[] = [
       "Immunity booster",
       "Unpasteurized",
       "Direct from forest tribes"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   },
   {
     id: "7",
@@ -115,7 +130,9 @@ export const products: Product[] = [
       "Extra virgin",
       "Multi-purpose usage",
       "Non-refined"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   },
   {
     id: "8",
@@ -130,7 +147,9 @@ export const products: Product[] = [
       "Easy to use cubes",
       "Healthy sweetener",
       "Farm fresh sugarcane"
-    ]
+    ],
+    likes: 0,
+    ratingCount: 0
   }
 ];
 

@@ -1,12 +1,13 @@
 import { useParams, Link, useNavigate } from "react-router";
 import { Product } from "../data/products";
-import { Star, ShoppingCart, Check, ArrowLeft, Loader2 } from "lucide-react";
+import { Star, ShoppingCart, Check, ArrowLeft, Loader2, Heart } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { PaymentDialog } from "../components/PaymentDialog";
 import { useState, useEffect } from "react";
 import { useAuth } from "../AuthProvider";
 import { motion } from "motion/react";
+import { useRouterContext } from "../routes";
 import "@/styles/ProductDetail.css";
 
 interface ProductDetailProps {
@@ -15,14 +16,20 @@ interface ProductDetailProps {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000/api";
 
-export function ProductDetail({ onAddToCart }: ProductDetailProps) {
+export function ProductDetail({ onAddToCart: _unused }: ProductDetailProps) {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [userRating, setUserRating] = useState(0);
+  const { 
+    onAddToCart, 
+    userRatings, 
+    handleRate, 
+    socialData, 
+    handleToggleLike 
+  } = useRouterContext();
   const { user, openLoginModal } = useAuth();
   const navigate = useNavigate();
 
@@ -115,25 +122,29 @@ export function ProductDetail({ onAddToCart }: ProductDetailProps) {
               <div className="global-rating-container">
                 <div className="global-rating-stars">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={i < Math.floor(product.rating) ? "filled" : "empty"} />
+                    <Star key={i} className={i < Math.floor(product.rating) ? "filled" : "empty"} size={16} />
                   ))}
+                  <span className="global-rating-value ml-2 text-sm">{product.rating}</span>
                 </div>
-                <span className="global-rating-value">{product.rating}</span>
+                <div className="flex items-center gap-1 ml-4 text-xs text-neutral-400">
+                  <Heart size={12} className={socialData.likes[product.id]?.isLiked ? "fill-red-500 text-red-500" : ""} fill={socialData.likes[product.id]?.isLiked ? "currentColor" : "none"} />
+                  <span>{(product as any).likes || 0}</span>
+                </div>
               </div>
 
               {/* User Rating */}
               <div className="user-rating-section">
-                <h3 className="user-rating-title">Rate this product:</h3>
+                <h3 className="user-rating-title">Verify your Experience:</h3>
                 <div className="user-rating-stars-container">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={i < userRating ? "rated" : "unrated"}
-                      onClick={() => setUserRating(i + 1)}
+                      className={i < (userRatings[product.id] || 0) ? "rated" : "unrated"}
+                      onClick={() => (handleRate as any)(product.id, i + 1)}
                     />
                   ))}
                 </div>
-                {userRating > 0 && <p className="user-rating-feedback">You rated: {userRating} star{userRating > 1 ? 's' : ''}</p>}
+                {(userRatings[product.id] || 0) > 0 && <p className="user-rating-feedback">Verification: {userRatings[product.id]} star{(userRatings[product.id] || 0) > 1 ? 's' : ''}</p>}
               </div>
 
               {product.discountPrice ? (

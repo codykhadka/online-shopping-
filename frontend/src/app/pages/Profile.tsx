@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../AuthProvider";
-import { Package, User, Phone, Mail, Calendar, Hash, ArrowRight, ShoppingBag, Clock } from "lucide-react";
+import { Package, User, Phone, Mail, Calendar, Hash, ArrowRight, ShoppingBag, Clock, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import "@/styles/Profile.css";
@@ -11,6 +11,7 @@ interface Order {
   productName: string;
   price: number;
   status: number;
+  location: string;
   timestamp: string;
   address: string;
   phone: string;
@@ -154,16 +155,19 @@ export function Profile() {
                         </div>
                       </div>
                       <h4 className="order-item-product-name">{order.productName}</h4>
-                      <div className="order-item-footer">
                         <div className="order-item-footer-item">
                           <Clock size={12} />
                           {new Date(order.timestamp).toLocaleDateString()}
                         </div>
                         <div className="order-item-footer-separator"></div>
+                        <div className="order-item-footer-item">
+                          <MapPin size={12} className="text-red-500" />
+                          {order.location || "Sorting Hub"}
+                        </div>
+                        <div className="order-item-footer-separator"></div>
                         <div className="order-item-price">
                           {order.price.toLocaleString('en-IN', { style: 'currency', currency: 'NPR' })}
                         </div>
-                      </div>
                     </div>
 
                     <div className="hidden md:block" style={{ display: 'none' }}>

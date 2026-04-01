@@ -4,13 +4,16 @@ import { Product } from "../data/products";
 import { ProductCard } from "../components/ProductCard";
 import { Button } from "../components/ui/button";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
-import { Leaf, Award, Recycle, ChevronDown, Loader2, Send, Search, AlertCircle, Star, Sparkles, X } from "lucide-react";
+import { Leaf, Award, Recycle, ChevronDown, Loader2, Send, Search, AlertCircle, Star, Sparkles, X, Truck, ChevronRight, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../AuthProvider";
+import { useSettings } from "../SettingsContext";
 import { Link } from "react-router";
 import { WelcomePopup } from "../components/WelcomePopup";
 import { LiveChat } from "../components/LiveChat";
+import { SocialProofNotification } from "../components/SocialProofNotification";
 import "@/styles/ui styles/WelcomePopup.css";
+import "@/styles/ui styles/SocialProofNotification.css";
 
 import "@/styles/Home.css";
 
@@ -22,8 +25,12 @@ interface HomeProps {
   userRatings: { [key: string]: number };
   onRate: (productId: string, rating: number) => void;
   products: Product[];
+  socialData: any;
+  onToggleLike: (productId: string) => void;
   isLoading?: boolean;
   error?: string | null;
+  userCount?: number;
+  visitorCount?: number;
 }
 
 // Typing animation variants
@@ -126,31 +133,43 @@ function CounterDisplay({ end, duration = 2.5 }: { end: number; duration?: numbe
   return <span ref={ref}>{count.toLocaleString()}+</span>;
 }
 
-const features = [
-  {
-    icon: <Award size={28} strokeWidth={1.5} />,
-    title: "Certified Organic",
-    desc: "100% natural products, independently verified and free from synthetics."
-  },
-  {
-    icon: <Leaf size={28} strokeWidth={1.5} />,
-    title: "Farm to Table",
-    desc: "Sourced directly from local farmers, ensuring maximum freshness."
-  },
-  {
-    icon: <Recycle size={28} strokeWidth={1.5} />,
-    title: "Eco-Sustainable",
-    desc: "Packaged in 100% biodegradable materials to protect our earth."
-  }
-];
+// features defined inside component to use t()
 
-export function Home({ onAddToCart, userRatings, onRate, products, isLoading = false, error = null }: HomeProps) {
+export function Home({ onAddToCart, userRatings, onRate, products, socialData, onToggleLike, isLoading = false, error = null, userCount = 0, visitorCount = 1 }: HomeProps) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [activeOrder, setActiveOrder] = useState<any>(null);
   const { user, logout } = useAuth();
+  const { t } = useSettings();
   const { scrollY } = useScroll();
+
+  useEffect(() => {
+    if (user?.id) {
+      fetch(`${API_URL}/users/${user.id}/orders`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            // Find most recent order that isn't completed (status < 3)
+            const active = data.find((o: any) => o.status < 3);
+            if (active) setActiveOrder(active);
+          }
+        })
+        .catch(err => console.error("Error fetching active order:", err));
+    } else {
+      setActiveOrder(null);
+    }
+  }, [user]);
+
+  const features = [
+    { icon: <Award size={28} strokeWidth={1.5} />, title: t("home.feat.certified"), desc: t("home.feat.certifiedDesc") },
+    { icon: <Leaf size={28} strokeWidth={1.5} />, title: t("home.feat.farm"), desc: t("home.feat.farmDesc") },
+    { icon: <Recycle size={28} strokeWidth={1.5} />, title: t("home.feat.eco"), desc: t("home.feat.ecoDesc") },
+  ];
+
+  const statusLabels = ["Confirmed", "Prepared", "Shipping"];
+  const statusProgress = [20, 50, 80];
 
   const categories = ["All", ...new Set(products.map(p => p.category))];
 
@@ -159,6 +178,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
   const heroScale = useTransform(scrollY, [0, 450], [1, 0.95]);
 
   const filteredProducts = products
+    .filter(p => !p.isFeatured && p.category !== "Featured")
     .filter(p => selectedCategory === "All" || p.category === selectedCategory)
     .filter(p => {
       const q = searchQuery.trim().toLowerCase();
@@ -209,6 +229,56 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
     >
       {/* ... (Hero section remains unchanged) */}
       <section className="hero-section">
+        {/* Active Order Tracker Overlay */}
+        <AnimatePresence>
+          {activeOrder && (
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              className="absolute top-24 right-6 z-50 max-w-xs w-full"
+            >
+              <Link to={`/tracking/${activeOrder.id}`} className="block">
+                <div className="bg-white/90 backdrop-blur-md border border-green-100 rounded-2xl p-4 shadow-2xl hover:shadow-green-200/50 transition-all group">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="size-8 bg-green-600 rounded-lg flex items-center justify-center text-white">
+                        <Truck size={16} className="animate-pulse" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-green-700">{t("home.liveTracking")}</p>
+                        <p className="text-xs font-bold text-neutral-900">Order #{activeOrder.id.slice(-6)}</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-neutral-400 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-end">
+                      <p className="text-sm font-black text-neutral-800">
+                        {activeOrder.status === -1 ? (t("home.liveTracking")) : statusLabels[activeOrder.status]}
+                      </p>
+                      <p className="text-[10px] font-bold text-neutral-400">{activeOrder.status === -1 ? "0%" : statusProgress[activeOrder.status]}%</p>
+                    </div>
+                    
+                    <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${activeOrder.status === -1 ? 5 : statusProgress[activeOrder.status]}%` }}
+                        className="h-full bg-green-600"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                      <MapPin size={10} className="text-red-500" />
+                      <span className="truncate">{activeOrder.location || "Sorting Hub"}</span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Parallax Background */}
         <motion.div
@@ -292,7 +362,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
               >
                 <Leaf size={13} className="hero-badge-leaf" />
               </motion.span>
-              100% Pure & Natural
+              {t("home.badge")}
             </motion.span>
           </motion.div>
 
@@ -303,26 +373,16 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
             className="hero-headline"
           >
-            Purity You Can{" "}
-            <motion.span
-              variants={typingContainer}
-              initial="hidden"
-              animate="visible"
-              className="hero-headline-italic"
-            >
-              {"Trust".split("").map((char, index) => (
+            {t("home.headline1")}{" "}
+            <motion.span variants={typingContainer} initial="hidden" animate="visible" className="hero-headline-italic">
+              {t("home.headline1b").split("").map((char, index) => (
                 <motion.span key={index} variants={typingLetter}>{char}</motion.span>
               ))}
             </motion.span>
             ,<br />
-            Nature You Can{" "}
-            <motion.span
-              variants={typingContainer}
-              initial="hidden"
-              animate="visible"
-              className="hero-headline-italic"
-            >
-              {"Taste".split("").map((char, index) => (
+            {t("home.headline2")}{" "}
+            <motion.span variants={typingContainer} initial="hidden" animate="visible" className="hero-headline-italic">
+              {t("home.headline2b").split("").map((char, index) => (
                 <motion.span key={index} variants={typingLetter}>{char}</motion.span>
               ))}
             </motion.span>
@@ -336,7 +396,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.55 }}
             className="hero-subheadline"
           >
-            Ethically sourced, sustainably grown, and delivered fresh to your door.
+            {t("home.subheadline")}
           </motion.p>
 
           {/* CTA */}
@@ -355,7 +415,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
                 className="hero-cta-button"
               >
-                Explore Collection
+                {t("home.cta")}
               </Button>
             </motion.div>
             <motion.div
@@ -391,9 +451,9 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1.8 }}
                 >
-                  <CounterDisplay end={5000} duration={2.5} />
+                  <CounterDisplay end={userCount || 3} duration={2} />
                 </motion.p>
-                <p className="badge-subtitle">Happy Customers</p>
+                <p className="badge-subtitle">{t("home.customers")}</p>
               </div>
             </div>
             <div className="badge-stars-container">
@@ -408,6 +468,17 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                   <Star size={14} fill="currentColor" />
                 </motion.div>
               ))}
+            </div>
+
+            {/* Live Visitor Pulse in Badge */}
+            <div className="mt-3 pt-3 border-t border-neutral-100 flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <p className="text-[10px] font-bold text-neutral-400">
+                {visitorCount} browsing now
+              </p>
             </div>
           </motion.div>
         </motion.div>
@@ -429,8 +500,8 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 <Leaf size={18} />
               </div>
               <div>
-                <p className="badge-title-sm">100% Organic</p>
-                <p className="badge-subtitle">Certified</p>
+                <p className="badge-title-sm">{t("home.organic")}</p>
+                <p className="badge-subtitle">{t("home.certified")}</p>
               </div>
             </div>
             <div className="badge-progress-container">
@@ -441,7 +512,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 className="badge-progress-bar"
               />
             </div>
-            <p className="badge-verified-text">Purity Verified</p>
+            <p className="badge-verified-text">{t("home.purityVerified")}</p>
           </motion.div>
         </motion.div>
 
@@ -489,7 +560,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             <div className="products-header-top">
               <div className="products-title-group">
                 <motion.h2 className="products-title">
-                  Danphe Organic
+                  <span className="title-danphe">Danphe</span> <span className="title-organic">Organic</span>
                 </motion.h2>
                 <motion.div
                   initial={{ scaleX: 0 }}
@@ -512,7 +583,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search products…"
+                    placeholder={t("home.search")}
                     className="search-input"
                   />
                   {searchQuery && (
@@ -558,21 +629,21 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
           {isLoading ? (
             <div className="loading-spinner-container">
               <Loader2 className="animate-spin" size={48} />
-              <p className="loading-spinner-text">Loading products…</p>
+              <p className="loading-spinner-text">{t("home.loading")}</p>
             </div>
           ) : error ? (
             <div className="error-container">
               <div className="error-icon-wrapper">
                 <AlertCircle size={32} className="error-icon" />
               </div>
-              <p className="error-title">Connection Error</p>
+              <p className="error-title">{t("home.error.title")}</p>
               <p className="error-message">{error}</p>
               <Button
                 variant="outline"
                 onClick={() => window.location.reload()}
                 className="error-retry-button"
               >
-                Try Again
+                {t("home.error.retry")}
               </Button>
             </div>
           ) : (
@@ -603,6 +674,9 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                             onAddToCart={onAddToCart}
                             userRating={userRatings[product.id]}
                             onRate={(r) => onRate(product.id, r)}
+                            isLiked={socialData?.likes?.[product.id]?.isLiked || false}
+                            onToggleLike={() => onToggleLike(product.id)}
+                            isReadOnly={false}
                           />
                         </div>
                       </motion.div>
@@ -617,7 +691,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                   animate={{ opacity: 1 }}
                   className="no-products-found"
                 >
-                  No products found.
+                  {t("home.noProducts")}
                 </motion.div>
               )}
             </>
@@ -655,10 +729,10 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const }}
           >
             <h2 className="newsletter-title">
-              Join the Organic Movement
+              {t("home.newsletter.title")}
             </h2>
             <p className="newsletter-description">
-              Subscribe for exclusive access to seasonal harvests, healthy living guides, and member-only benefits.
+              {t("home.newsletter.desc")}
             </p>
             <form onSubmit={handleSubscribe} className="newsletter-form">
               <input
@@ -666,7 +740,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 required
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Enter your email address"
+                placeholder={t("home.newsletter.placeholder")}
                 disabled={isSubscribing}
                 className="newsletter-input"
               />
@@ -678,7 +752,7 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
                 {isSubscribing ? (
                   <Loader2 className="animate-spin" />
                 ) : (
-                  <>Subscribe Now <Send size={18} className="newsletter-button-icon" /></>
+                  <>{t("home.newsletter.btn")} <Send size={18} className="newsletter-button-icon" /></>
                 )}
               </Button>
             </form>
@@ -689,8 +763,30 @@ export function Home({ onAddToCart, userRatings, onRate, products, isLoading = f
         </div>
       </motion.section>
 
+      {/* Floating Featured Products Link */}
+      <motion.div
+         initial={{ opacity: 0, x: 50 }}
+         animate={{ opacity: 1, x: 0 }}
+         transition={{ delay: 1, type: "spring", stiffness: 200 }}
+         className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 z-50 pointer-events-auto"
+      >
+         <Link to="/featured-products" className="group flex flex-col items-center justify-center p-3 sm:p-4 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-2xl shadow-xl shadow-amber-500/30 border border-white/30 hover:scale-105 transition-all outline-none">
+             <div className="relative">
+                <Sparkles size={24} className="text-white drop-shadow-md group-hover:rotate-12 transition-transform" />
+                <div className="absolute inset-0 bg-white/40 rounded-full blur-md group-hover:blur-xl transition-all opacity-0 group-hover:opacity-100 mix-blend-overlay"></div>
+             </div>
+             <span className="text-[9px] font-black uppercase tracking-widest text-white mt-1.5 drop-shadow">{t("home.featured")}</span>
+             
+             {/* Ping animation behind */}
+             <div className="absolute inset-0 rounded-2xl border-2 border-amber-400 animate-ping opacity-20 -z-10 group-hover:animate-none"></div>
+         </Link>
+      </motion.div>
+
       {/* Floating Customer Support Chat */}
       <LiveChat user={user} />
+
+      {/* Social Proof "Push" Notifications */}
+      <SocialProofNotification products={products} />
     </motion.div>
   );
 }

@@ -1,6 +1,19 @@
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
+import { AuthProvider } from "./AuthProvider";
+import { SettingsProvider } from "./SettingsContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <SettingsProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </SettingsProvider>
+    </GoogleOAuthProvider>
+  );
 }
