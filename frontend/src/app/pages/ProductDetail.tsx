@@ -52,7 +52,11 @@ export function ProductDetail({ onAddToCart: _unused }: ProductDetailProps) {
   }, [id]);
 
   const handleBuyNow = () => {
-    if (!user) { openLoginModal(); } else { setIsPaymentOpen(true); }
+    if (!user) { 
+      openLoginModal(); 
+    } else { 
+      setIsPaymentOpen(true); 
+    }
   };
 
   if (isLoading) {

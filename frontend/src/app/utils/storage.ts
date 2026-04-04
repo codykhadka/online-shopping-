@@ -4,6 +4,7 @@ export interface Order {
   customerName: string;
   productName: string;
   price: number;
+  deliveryFee?: number;
   status: number; // -1: Pending, 0: Confirmed, 1: Prepared, 2: Shipping, 3: Completed
   location: string;
   timestamp: string;

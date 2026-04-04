@@ -24,6 +24,7 @@ interface PaymentDialogProps {
 }
 
 type DeliveryMethod = "economy" | "standard" | "express" | "cashOnDelivery";
+type PaymentMode = "card" | "esewa" | "khalti" | "cod";
 
 // Conversion: $1 = Rs 133 (approx)
 const RS_RATE = 133;
@@ -42,33 +43,7 @@ const deliveryOptions: {
   badge: string | null;
   color: string;
 }[] = [
-  {
-    id: "economy",
-    name: "Economy",
-    description: "7–10 business days",
-    priceRs: 20,
-    icon: Truck,
-    badge: "Cheapest",
-    color: "green",
-  },
-  {
-    id: "standard",
-    name: "Standard",
-    description: "5–7 business days",
-    priceRs: 399,
-    icon: Truck,
-    badge: null,
-    color: "blue",
-  },
-  {
-    id: "express",
-    name: "Express",
-    description: "2–3 business days",
-    priceRs: 930,
-    icon: Zap,
-    badge: "Fast",
-    color: "orange",
-  },
+
   {
     id: "cashOnDelivery",
     name: "Cash on Delivery",
@@ -99,23 +74,84 @@ const badgeStyle: Record<string, string> = {
   Fast: "bg-orange-100 text-orange-700",
 };
 
+const CITIES = ["Kathmandu", "Bhaktapur", "Lalitpur", "Budhanilkantha", "Tokha"];
+
+const KATHMANDU_WARDS_DATA = [
+  { ward: "Ward 1", label: "Ward 1 – Naxal", areas: ["Naxal Bhagwati", "Narayanchaur", "Nagpokhari", "Gairidhara"] },
+  { ward: "Ward 2", label: "Ward 2 – Lazimpat", areas: ["Lazimpat main", "Panipokhari", "Dhobichaur (part)"] },
+  { ward: "Ward 3", label: "Ward 3 – Maharajgunj", areas: ["Maharajgunj", "Chakrapath area", "Teaching Hospital area"] },
+  { ward: "Ward 4", label: "Ward 4 – Baluwatar", areas: ["Baluwatar", "Bishalnagar", "Kapan (part)"] },
+  { ward: "Ward 5", label: "Ward 5 – Handigaun", areas: ["Handigaun core", "Dhumbarahi (part)"] },
+  { ward: "Ward 6", label: "Ward 6 – Boudha", areas: ["Boudhanath", "Tinchuli", "Ramhiti"] },
+  { ward: "Ward 7", label: "Ward 7 – Chabahil", areas: ["Chabahil", "Mitrapark", "Gopi Krishna area"] },
+  { ward: "Ward 8", label: "Ward 8 – Gaushala", areas: ["Gaushala", "Pingalasthan", "Airport area (part)"] },
+  { ward: "Ward 9", label: "Ward 9 – Sinamangal", areas: ["Sinamangal", "Airport residential", "Pepsicola (part)"] },
+  { ward: "Ward 10", label: "Ward 10 – Baneshwor", areas: ["New Baneshwor", "Old Baneshwor", "Sankhamul"] },
+  { ward: "Ward 11", label: "Ward 11 – Tripureshwor", areas: ["Tripureshwor", "Thapathali", "Kalmochan"] },
+  { ward: "Ward 12", label: "Ward 12 – Teku", areas: ["Teku", "Pachali", "Bishnumati riverside"] },
+  { ward: "Ward 13", label: "Ward 13 – Kalimati", areas: ["Kalimati", "Tankeshwor", "Soltimode"] },
+  { ward: "Ward 14", label: "Ward 14 – Kuleshwor", areas: ["Kuleshwor", "Balkhu (part)"] },
+  { ward: "Ward 15", label: "Ward 15 – Swoyambhu", areas: ["Swayambhunath", "Bijeshwori", "Sitapaila (part)"] },
+  { ward: "Ward 16", label: "Ward 16 – Balaju", areas: ["Balaju", "Machhapokhari", "Industrial area"] },
+  { ward: "Ward 17", label: "Ward 17 – Chhetrapati", areas: ["Chhetrapati", "Thahiti", "Jhochhen"] },
+  { ward: "Ward 18", label: "Ward 18 – Naradevi", areas: ["Naradevi", "Kilagal", "Nardevi temple area"] },
+  { ward: "Ward 19", label: "Ward 19 – Bangemudha", areas: ["Bangemudha", "Wotu", "Nhyokha"] },
+  { ward: "Ward 20", label: "Ward 20 – Basantapur", areas: ["Basantapur", "Hanuman Dhoka", "Kathmandu Durbar Square"] },
+  { ward: "Ward 21", label: "Ward 21 – Bhimsensthan", areas: ["Bhimsensthan", "Sukra Path", "New Road"] },
+  { ward: "Ward 22", label: "Ward 22 – New Road core", areas: ["Indrachowk (part)", "Makhan", "Asan entry area"] },
+  { ward: "Ward 23", label: "Ward 23 – Indra Chowk", areas: ["Indra Chowk", "Makhan Tole"] },
+  { ward: "Ward 24", label: "Ward 24 – Maru", areas: ["Maru Tole", "Kasthamandap area"] },
+  { ward: "Ward 25", label: "Ward 25 – Ason", areas: ["Asan Bazaar", "Kel Tole", "Balkumari area"] },
+  { ward: "Ward 26", label: "Ward 26 – Thamel", areas: ["Thamel main", "Paknajol", "Chaksibari"] },
+  { ward: "Ward 27", label: "Ward 27 – Jyatha", areas: ["Jyatha", "Kantipath area"] },
+  { ward: "Ward 28", label: "Ward 28 – Bagbazaar", areas: ["Bagbazaar", "Exhibition Road", "Padmodaya area"] },
+  { ward: "Ward 29", label: "Ward 29 – Dillibazar", areas: ["Dillibazar", "Putalisadak", "Gyaneshwor (part)"] },
+  { ward: "Ward 30", label: "Ward 30 – Ason / Indra Chowk", areas: ["Asan core", "Indra Chowk", "Maru surroundings"] },
+  { ward: "Ward 31", label: "Ward 31 – Balkhu", areas: ["Balkhu", "Kalanki side (part)"] },
+  { ward: "Ward 32", label: "Ward 32 – Koteshwor", areas: ["Koteshwor", "Jadibuti", "Tinkune (part)"] }
+];
+
+const TOKHA_WARDS_DATA = [
+  { ward: "Ward 1",  label: "Ward 1 – Tokha (Old core)",       areas: ["Tokha Bazaar", "Chandeshwori area"] },
+  { ward: "Ward 2",  label: "Ward 2 – Baniyatar",               areas: ["Baniyatar", "Greenhill area"] },
+  { ward: "Ward 3",  label: "Ward 3 – Gongabu",                 areas: ["Gongabu", "New Bus Park area"] },
+  { ward: "Ward 4",  label: "Ward 4 – Dhapasi",                 areas: ["Dhapasi", "Basundhara (part)"] },
+  { ward: "Ward 5",  label: "Ward 5 – Grande / Pasikot",        areas: ["Grande area", "Pasikot"] },
+  { ward: "Ward 6",  label: "Ward 6 – Jhor",                    areas: ["Jhor Mahankal", "Rural hillside settlements"] },
+  { ward: "Ward 7",  label: "Ward 7 – Bhadrabas",               areas: ["Bhadrabas", "Forest-side areas"] },
+  { ward: "Ward 8",  label: "Ward 8 – Lamatar",                 areas: ["Lamatar", "Semi-rural zones"] },
+  { ward: "Ward 9",  label: "Ward 9 – Manamaiju",               areas: ["Manamaiju", "Agricultural/residential mix"] },
+  { ward: "Ward 10", label: "Ward 10 – Samakhusi (part)",       areas: ["Samakhusi area (part)", "Ring Road connection zone"] },
+  { ward: "Ward 11", label: "Ward 11 – Gongabu (extended)",     areas: ["Gongabu outskirts", "Bus park surroundings (expanded zone)"] },
+];
+
+const getWardsForCity = (city: string) => {
+  if (city === "Kathmandu") return KATHMANDU_WARDS_DATA;
+  if (city === "Tokha") return TOKHA_WARDS_DATA;
+  return [];
+};
+
 export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: PaymentDialogProps) {
   const navigate = useNavigate();
   const authUser = getAuthUser();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("economy");
-  const [customDeliveryFeeRs, setCustomDeliveryFeeRs] = useState(20); // starts at Rs 20
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("cashOnDelivery");
+  const [customDeliveryFeeRs, setCustomDeliveryFeeRs] = useState(266); // starts at Rs 266 (COD default)
   const [formData, setFormData] = useState({
     cardNumber: "",
     cardName: authUser?.name || "",
     expiryDate: "",
     cvv: "",
     email: "",
+    ward: "Ward 1",
+    area: KATHMANDU_WARDS_DATA[0].areas[0],
+    landmark: "",
     address: "",
-    city: "",
-    zipCode: "",
+    city: "Kathmandu",
+    zipCode: "44600",
     phone: "",
   });
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("card");
 
   const selectedOption = deliveryOptions.find(d => d.id === deliveryMethod)!;
   const subtotalRs = toRs((product.discountPrice || product.price) * quantity);
@@ -132,8 +168,52 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
   const incrementFee = () => setCustomDeliveryFeeRs(v => Math.min(v + 10, 6650)); // max Rs 6650
   const decrementFee = () => setCustomDeliveryFeeRs(v => Math.max(v - 10, 10)); // min Rs 10
 
+  const handleInitiatePayment = async (gateway: "esewa" | "khalti") => {
+    try {
+      setIsProcessing(true);
+      const productId = `order-${Math.random().toString(36).substring(7).toUpperCase()}`;
+      
+      const response = await fetch("http://localhost:5001/api/initiate-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: formData.cardName || authUser?.name || "Customer",
+          customerEmail: formData.email || authUser?.email || "customer@example.com",
+          customerPhone: formData.phone || "9800000000",
+          productName: product.name,
+          amount: totalRs,
+          paymentGateway: gateway,
+          productId: productId
+        })
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error("Failed to initiate payment. Please try again.");
+      }
+    } catch (error) {
+      console.error("Payment Error:", error);
+      toast.error("An error occurred. Please check if the payment server is running.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (paymentMode === "esewa") {
+      return handleInitiatePayment("esewa");
+    }
+    if (paymentMode === "khalti") {
+      return handleInitiatePayment("khalti");
+    }
+    if (paymentMode === "cod") {
+      setDeliveryMethod("cashOnDelivery");
+    }
+
     setIsProcessing(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
     setIsProcessing(false);
@@ -144,9 +224,16 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
       customerName: formData.cardName || "Guest Customer",
       productName: product.name,
       price: totalRs,
+      deliveryFee: deliveryFeeRs,
       status: -1,
+      location: "",
       timestamp: new Date().toLocaleString(),
-      address: `${formData.address}, ${formData.city}, ${formData.zipCode}`,
+      address: [
+        formData.area,
+        formData.landmark,
+        formData.ward,
+        formData.city
+      ].filter(Boolean).join(", ") + (formData.zipCode ? ` (Near: ${formData.zipCode})` : ""),
       phone: formData.phone,
       user_id: authUser?.id || null,
     });
@@ -157,15 +244,34 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
     toast.success(msg);
     onClose();
 
-    setFormData({ cardNumber: "", cardName: "", expiryDate: "", cvv: "", email: "", address: "", city: "", zipCode: "", phone: "" });
-    setDeliveryMethod("economy");
-    setCustomDeliveryFeeRs(20);
+    setFormData({ cardNumber: "", cardName: "", expiryDate: "", cvv: "", email: "", ward: "Ward 1", area: KATHMANDU_WARDS_DATA[0].areas[0], landmark: "", address: "", city: "Kathmandu", zipCode: "44600", phone: "" });
+    setDeliveryMethod("cashOnDelivery");
+    setCustomDeliveryFeeRs(266);
     navigate(`/tracking/${orderId}`);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      if (name === "city") {
+        const wards = getWardsForCity(value);
+        if (wards.length > 0) {
+          updated.ward = wards[0].ward;
+          updated.area = wards[0].areas[0];
+        } else {
+          updated.ward = "";
+          updated.area = "";
+        }
+      } else if (name === "ward") {
+        const wards = getWardsForCity(prev.city);
+        const matchingWard = wards.find(w => w.ward === value);
+        if (matchingWard) {
+          updated.area = matchingWard.areas[0] || "";
+        }
+      }
+      return updated;
+    });
   };
 
   return (
@@ -214,87 +320,36 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
             </div>
           </div>
 
-          {/* ── Delivery Method ───────────────────────────── */}
+
+
+          {/* ── Payment Mode Selection ────────────────────── */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-neutral-900">Select Delivery Method</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {deliveryOptions.map((option) => {
-                const Icon = option.icon;
-                const isSelected = deliveryMethod === option.id;
+            <h3 className="text-base font-bold text-neutral-900">Select Payment Method</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                { id: "card", name: "Card", icon: CreditCard },
+                { id: "esewa", name: "eSewa", icon: CheckCircle2 },
+                { id: "khalti", name: "Khalti", icon: CheckCircle2 },
+                { id: "cod", name: "COD", icon: Banknote },
+              ].map((m) => {
+                const Icon = m.icon;
+                const isSelected = paymentMode === m.id;
                 return (
                   <button
-                    key={option.id}
+                    key={m.id}
                     type="button"
-                    onClick={() => handleSelectMethod(option.id)}
-                    className={`relative p-5 border-2 rounded-2xl text-left transition-all duration-200 ${
-                      isSelected
-                        ? `${selectedBorder[option.color]} ring-2`
-                        : "border-neutral-200 hover:border-neutral-300 bg-white"
+                    onClick={() => {
+                      setPaymentMode(m.id as PaymentMode);
+                    }}
+                    className={`p-3 border-2 rounded-xl text-center flex flex-col items-center gap-2 transition-all ${
+                      isSelected ? "border-green-600 bg-green-50 ring-2 ring-green-100" : "border-neutral-200 bg-white"
                     }`}
                   >
-                    {/* Checkmark */}
-                    {isSelected && (
-                      <CheckCircle2 className="absolute top-3 right-3 size-5 text-current opacity-70" />
-                    )}
-
-                    {/* Icon */}
-                    <div className={`size-12 rounded-xl flex items-center justify-center mb-3 ${
-                      isSelected ? iconColors[option.color] : "bg-neutral-100 text-neutral-500"
-                    }`}>
-                      <Icon className="size-6" />
-                    </div>
-
-                    <p className={`font-bold text-sm mb-0.5 ${isSelected ? "text-neutral-900" : "text-neutral-700"}`}>
-                      {option.name}
-                    </p>
-                    <p className="text-xs text-neutral-500 mb-2">{option.description}</p>
-
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-base font-black ${isSelected ? "text-neutral-900" : "text-neutral-700"}`}>
-                        Rs {option.priceRs.toLocaleString()}
-                      </span>
-                      {option.badge && (
-                        <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeStyle[option.badge]}`}>
-                          {option.badge}
-                        </span>
-                      )}
-                    </div>
+                    <Icon className={`size-5 ${isSelected ? "text-green-600" : "text-neutral-400"}`} />
+                    <span className={`text-xs font-bold ${isSelected ? "text-neutral-900" : "text-neutral-600"}`}>{m.name}</span>
                   </button>
                 );
               })}
-            </div>
-
-            {/* ── Delivery Fee Adjuster ─────────────────── */}
-            <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-neutral-900 text-sm mb-0.5">Adjust Delivery Charge</p>
-                  <p className="text-xs text-neutral-500">Based on {selectedOption.name} · ±Rs 10 per click</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={decrementFee}
-                    disabled={customDeliveryFeeRs <= 10}
-                    className="size-10 rounded-xl border-2 border-neutral-300 bg-white hover:bg-red-50 hover:border-red-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all active:scale-95"
-                  >
-                    <Minus className="size-4 text-neutral-700" />
-                  </button>
-
-                  <div className="min-w-[72px] text-center">
-                    <p className="text-2xl font-black text-green-700">Rs {customDeliveryFeeRs}</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={incrementFee}
-                    disabled={customDeliveryFeeRs >= 6650}
-                    className="size-10 rounded-xl border-2 border-neutral-300 bg-white hover:bg-green-50 hover:border-green-400 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all active:scale-95"
-                  >
-                    <Plus className="size-4 text-neutral-700" />
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -308,34 +363,111 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
           </div>
 
           {/* ── Delivery Address ──────────────────────────── */}
-          <div className="space-y-4">
-            <h3 className="text-base font-bold text-neutral-900">Delivery Address</h3>
-            <div>
-              <Label htmlFor="address" className="text-sm font-semibold">Street Address</Label>
-              <Input id="address" name="address" placeholder="123 Main St" value={formData.address} onChange={handleChange} required className="mt-1.5 h-12 text-base" />
+          <div className="space-y-4 bg-neutral-50/50 p-5 rounded-2xl border border-neutral-100">
+            <h3 className="text-base font-bold text-neutral-900 border-b border-neutral-200 pb-2">Delivery Location</h3>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm text-indigo-800 flex items-center gap-2 font-medium">
+              <span>📍 State: Bagmati Province (Currently serving only)</span>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="city" className="text-sm font-semibold text-neutral-700">City / District</Label>
+                <select 
+                  id="city" 
+                  name="city" 
+                  value={formData.city} 
+                  onChange={handleChange} 
+                  required 
+                  className="mt-1.5 flex h-12 w-full items-center justify-between rounded-xl border border-neutral-200 bg-white px-3 py-2 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-medium text-neutral-900"
+                >
+                  {CITIES.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+
+              {(formData.city === "Kathmandu" || formData.city === "Tokha") ? (
+                <>
+                  <div>
+                    <Label htmlFor="ward" className="text-sm font-semibold text-neutral-700">{formData.city} Ward</Label>
+                    <select 
+                      id="ward" 
+                      name="ward" 
+                      value={formData.ward} 
+                      onChange={handleChange} 
+                      required 
+                      className="mt-1.5 flex h-12 w-full items-center justify-between rounded-xl border border-neutral-200 bg-white px-3 py-2 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-neutral-900 line-clamp-1 truncate"
+                    >
+                      {getWardsForCity(formData.city).map(w => (
+                        <option key={w.ward} value={w.ward}>{w.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="area" className="text-sm font-semibold text-neutral-700">Specific Area</Label>
+                    <select
+                      id="area"
+                      name="area"
+                      value={formData.area}
+                      onChange={handleChange}
+                      required
+                      className="mt-1.5 flex h-12 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 text-neutral-900"
+                    >
+                      {getWardsForCity(formData.city).find(w => w.ward === formData.ward)?.areas.map(area => (
+                        <option key={area} value={area}>{area}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div className="sm:col-span-1">
+                  <Label htmlFor="area" className="text-sm font-semibold text-neutral-700">General Area / Landmark</Label>
+                  <Input 
+                    id="area" 
+                    name="area" 
+                    placeholder="E.g., Downtown"
+                    value={formData.area} 
+                    onChange={handleChange} 
+                    required 
+                    className="mt-1.5 h-12 text-base bg-white rounded-xl w-full"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Landmark description row */}
+            <div>
+              <Label htmlFor="landmark" className="text-sm font-semibold text-neutral-700">House Location / Landmark</Label>
+              <Input
+                id="landmark"
+                name="landmark"
+                placeholder="E.g., Near supermarket, road side, opposite to temple, blue gate..."
+                value={formData.landmark}
+                onChange={handleChange}
+                className="mt-1.5 h-12 text-base bg-white rounded-xl w-full"
+              />
+              <p className="text-xs text-neutral-400 mt-1">📍 Help us find you easily — mention any nearby famous place or landmark</p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="city" className="text-sm font-semibold">City</Label>
-                <Input id="city" name="city" placeholder="Kathmandu" value={formData.city} onChange={handleChange} required className="mt-1.5 h-12 text-base" />
+                <Label htmlFor="zipCode" className="text-sm font-semibold text-neutral-700">House / Flat No.</Label>
+                <Input id="zipCode" name="zipCode" placeholder="House No. or Flat..." value={formData.zipCode} onChange={handleChange} className="mt-1.5 h-12 text-base bg-white rounded-xl" />
               </div>
               <div>
-                <Label htmlFor="zipCode" className="text-sm font-semibold">ZIP / Postal Code</Label>
-                <Input id="zipCode" name="zipCode" placeholder="44600" value={formData.zipCode} onChange={handleChange} required className="mt-1.5 h-12 text-base" />
+                <Label htmlFor="phone" className="text-sm font-semibold text-neutral-700">Phone Number</Label>
+                <Input id="phone" name="phone" type="tel" placeholder="+977 98XXXXXXXX" value={formData.phone} onChange={handleChange} required className="mt-1.5 h-12 text-base bg-white rounded-xl" />
               </div>
-            </div>
-            <div>
-              <Label htmlFor="phone" className="text-sm font-semibold">Phone Number</Label>
-              <Input id="phone" name="phone" type="tel" placeholder="+977 98XXXXXXXX" value={formData.phone} onChange={handleChange} required className="mt-1.5 h-12 text-base" />
             </div>
           </div>
 
           {/* ── Payment Details (card only) ───────────────── */}
-          {deliveryMethod !== "cashOnDelivery" && (
+          {paymentMode === "card" && (
             <div className="space-y-4">
               <h3 className="text-base font-bold text-neutral-900 flex items-center gap-2">
                 <CreditCard className="size-5 text-green-600" />
-                Payment Details
+                Card Details
               </h3>
               <div>
                 <Label htmlFor="cardName" className="text-sm font-semibold">Cardholder Name</Label>
@@ -358,20 +490,32 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
             </div>
           )}
 
-          {/* ── Cash on Delivery Notice ────────────────────── */}
-          {deliveryMethod === "cashOnDelivery" && (
-            <div className="bg-purple-50 border border-purple-200 rounded-2xl p-5">
-              <div className="flex items-start gap-3">
-                <Banknote className="size-6 text-purple-600 mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-bold text-purple-900 mb-1">Cash on Delivery</p>
-                  <p className="text-sm text-purple-700">
-                    You will pay <strong>Rs {totalRs.toLocaleString()}</strong> in cash when your order arrives. Please keep exact change ready.
-                  </p>
-                </div>
-              </div>
+          {/* ── Gateway Notice ────────────────────── */}
+          {paymentMode === "esewa" && (
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
+              <p className="text-sm text-green-700">
+                You will be redirected to the <strong>eSewa</strong> checkout page to complete your payment of <strong>Rs {totalRs.toLocaleString()}</strong>.
+              </p>
             </div>
           )}
+
+          {paymentMode === "khalti" && (
+            <div className="bg-purple-50 border border-purple-200 rounded-2xl p-5">
+              <p className="text-sm text-purple-700">
+                You will be redirected to the <strong>Khalti</strong> checkout page to complete your payment of <strong>Rs {totalRs.toLocaleString()}</strong>.
+              </p>
+            </div>
+          )}
+
+          {paymentMode === "cod" && (
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+              <p className="text-sm text-blue-700">
+                You will pay <strong>Rs {totalRs.toLocaleString()}</strong> in cash when your order arrives. Please keep exact change ready.
+              </p>
+            </div>
+          )}
+
+
 
           {/* ── Action Buttons ────────────────────────────── */}
           <div className="flex gap-3 pt-2">
@@ -381,7 +525,7 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
             <Button type="submit" className="flex-1 h-13 text-base font-black rounded-xl bg-green-600 hover:bg-green-500" disabled={isProcessing}>
               {isProcessing ? (
                 "Processing..."
-              ) : deliveryMethod === "cashOnDelivery" ? (
+              ) : paymentMode === "cod" ? (
                 `Confirm Order · Rs ${totalRs.toLocaleString()}`
               ) : (
                 `Pay Rs ${totalRs.toLocaleString()}`
@@ -390,7 +534,7 @@ export function PaymentDialog({ product, quantity = 1, isOpen, onClose }: Paymen
           </div>
 
           <p className="text-xs text-center text-neutral-400">
-            🔒 {deliveryMethod === "cashOnDelivery"
+            🔒 {paymentMode === "cod" 
               ? "Your order is secure and will be confirmed immediately"
               : "Your payment information is encrypted and secure"}
           </p>

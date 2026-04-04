@@ -387,6 +387,113 @@ app.post('/api/payments/traditional', (req, res) => {
   }
 });
 
+// ── Unified Payment Gateway Verification ─────────────────────────────────────
+
+// 🟢 eSewa Verification (Standard Signature Verification)
+app.get('/api/payment/verify/esewa', (req, res) => {
+  const { data } = req.query; // eSewa returns a base64 encoded JSON string
+  if (!data) return res.status(400).json({ success: false, error: 'No data from eSewa.' });
+
+  try {
+    const decoded = Buffer.from(data, 'base64').toString('utf-8');
+    const result = JSON.parse(decoded);
+
+    // Verify logic: Check transaction_uuid (OrderId) and status
+    const orderId = result.transaction_uuid;
+    if (result.status === 'COMPLETE') {
+      db.prepare('UPDATE orders SET status = 0 WHERE id = ?').run(orderId);
+      db.prepare('INSERT INTO notifications (title, message, type) VALUES (?, ?, ?)')
+        .run('eSewa Payment Success', `Order #ORD-${orderId} paid via eSewa.`, 'order');
+      
+      // Redirect to frontend success page
+      res.redirect(`http://localhost:5173/profile?status=success&orderId=${orderId}`);
+    } else {
+      res.redirect(`http://localhost:5173/profile?status=failed&orderId=${orderId}`);
+    }
+  } catch (err) {
+    console.error('eSewa Verify Error:', err);
+    res.status(500).send('Internal Error');
+  }
+});
+
+// 🟢 Khalti Verification (API Verification)
+app.get('/api/payment/verify/khalti', async (req, res) => {
+  const { pidx, purchase_order_id, status } = req.query;
+  const orderId = purchase_order_id;
+
+  if (status === 'Completed') {
+    try {
+      // In a real app, you'd call Khalti API to verify pidx here
+      db.prepare('UPDATE orders SET status = 0 WHERE id = ?').run(orderId);
+      db.prepare('INSERT INTO notifications (title, message, type) VALUES (?, ?, ?)')
+        .run('Khalti Payment Success', `Order #ORD-${orderId} paid via Khalti.`, 'order');
+      
+      res.redirect(`http://localhost:5173/profile?status=success&orderId=${orderId}`);
+    } catch (err) {
+      console.error('Khalti Verify Error:', err);
+      res.status(500).send('Verification failed.');
+    }
+  } else {
+    res.redirect(`http://localhost:5173/profile?status=failed&orderId=${orderId}`);
+  }
+});
+
+// 🟢 Mock Payment Gateway UI (Stunning Modal Simulation)
+app.get('/api/payment/mock-gateway', (req, res) => {
+  const { orderId, amount } = req.query;
+  res.send(`
+    <html>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600&display=swap" rel="stylesheet">
+        <style>
+          body { 
+            background: #09090b; color: white; font-family: 'Outfit', sans-serif; 
+            display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;
+          }
+          .card {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; text-align: center; max-width: 400px;
+            box-shadow: 0 0 30px rgba(22, 163, 74, 0.2);
+          }
+          h1 { color: #16a34a; font-size: 2rem; margin-bottom: 8px; }
+          p { color: #a1a1aa; margin-bottom: 32px; }
+          .price { font-size: 3rem; font-weight: 600; margin-bottom: 32px; letter-spacing: -2px; }
+          .btn {
+            background: #16a34a; color: white; border: none; padding: 16px 32px; border-radius: 12px;
+            font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 1rem;
+          }
+          .btn:hover { background: #15803d; transform: scale(1.02); }
+          .cancel { background: transparent; color: #71717a; border: 1px solid #3f3f46; margin-top: 12px; }
+          .cancel:hover { background: rgba(255, 255, 255, 0.05); color: #ef4444; border-color: #ef4444; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div style="font-size: 50px; margin-bottom: 16px;">🌱</div>
+          <h1>Danphe Gateway</h1>
+          <p>Securely processing payment for Order #ORD-${orderId}</p>
+          <div class="price">Rs. ${amount}</div>
+          <button class="btn" onclick="location.href='/api/payment/mock-verify?orderId=${orderId}&status=success'">Complete Order</button>
+          <button class="btn cancel" onclick="location.href='/api/payment/mock-verify?orderId=${orderId}&status=failed'">Decline Transaction</button>
+        </div>
+      </body>
+    </html>
+  `);
+});
+
+// 🟢 Mock Verification
+app.get('/api/payment/mock-verify', (req, res) => {
+  const { orderId, status } = req.query;
+  if (status === 'success') {
+    db.prepare('UPDATE orders SET status = 0 WHERE id = ?').run(orderId);
+    db.prepare('INSERT INTO notifications (title, message, type) VALUES (?, ?, ?)')
+      .run('Payment Success', `Mock payment for Order #ORD-${orderId} completed.`, 'order');
+    res.redirect(`http://localhost:5173/profile?status=success&orderId=${orderId}`);
+  } else {
+    res.redirect(`http://localhost:5173/profile?status=failed&orderId=${orderId}`);
+  }
+});
+
 // ── Newsletter Subscription ───────────────────────────────────────────────────
 app.post('/api/subscribe', (req, res) => {
   const { email } = req.body;

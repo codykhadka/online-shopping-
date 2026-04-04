@@ -1,0 +1,1 @@
+{"accountNumber":"4060100017121010","accountName":"DHANRAJ  KHADKA","bankCode":"RBBANPKA","accountType":"NORMAL SAVING","bankCodeCIPS":"0201"}

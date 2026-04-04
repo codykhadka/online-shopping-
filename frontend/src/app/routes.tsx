@@ -19,6 +19,8 @@ import { AdminChat } from "./pages/AdminChat";
 import { AdminUsers } from "./pages/AdminUsers";
 import { AdminMonitoring } from "./pages/AdminMonitoring";
 import { Profile } from "./pages/Profile";
+import { Checkout } from "./pages/Checkout";
+import { PaymentResult } from "./pages/PaymentResult";
 import { useOutletContext } from "react-router";
 import { Product } from "./data/products";
 import { useAuth, AuthProvider } from "./AuthProvider";
@@ -162,6 +164,18 @@ export const router = createBrowserRouter([
                 <Profile />
               </Protected>
             ),
+          },
+          {
+            path: "checkout/:productId",
+            Component: Checkout,
+          },
+          {
+            path: "payment-success",
+            Component: PaymentResult,
+          },
+          {
+            path: "payment-failure",
+            Component: PaymentResult,
           },
         ],
       },

@@ -230,6 +230,36 @@ export function DeliveryTracking() {
               <QualityItem label="Sterilized Packing" checked />
             </div>
           </div>
+
+          {/* Price Breakdown Card */}
+          {orderData && (
+            <div className="info-card">
+              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                💰 Price Breakdown
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-slate-600">
+                  <span>Subtotal</span>
+                  <span className="font-semibold text-slate-800">
+                    Rs {(orderData.price - (orderData.deliveryFee ?? 0)).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Delivery Charge</span>
+                  <span className="font-semibold text-green-700">
+                    Rs {(orderData.deliveryFee ?? 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-slate-100 pt-2 mt-1">
+                  <span className="font-bold text-slate-900">Total Paid</span>
+                  <span className="font-black text-green-700 text-base">
+                    Rs {orderData.price.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
